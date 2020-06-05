@@ -777,18 +777,19 @@ double enAugAccelShiftTruncFac(int num_system_samples,
                 op_Mhat_bootstrap->apply(temp, &q);
             }
 
-            auto op = [&op_Ahat_bootstrap, &op_Ahat](const arma::vec& x, arma::vec* output) {
+            auto op = [&op_Ahat_bootstrap, &op_Ahat, alpha](const arma::vec& x, arma::vec* output) {
                 arma::vec temp_;
                 op_Ahat->solve(x, &temp_);
                 op_Ahat_bootstrap->apply(temp_, output);
-                *output = x - *output;
+                *output = x - alpha * (*output);
             };
 
-            pows_q.push_back(q);
+            pows_q.reserve(order + 1);
+            pows_q.emplace_back(q);
             for (int i = 1; i < order + 1; ++i) {
                 arma::vec new_vec;
                 op(pows_q[i - 1], &new_vec);
-                pows_q.push_back(new_vec);
+                pows_q.emplace_back(new_vec);
             }
 
             op_Ahat->solve(q, &Ahat_inv_q);
