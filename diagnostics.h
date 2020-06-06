@@ -23,7 +23,7 @@ enum TruncationWindowType
 #define DEFAULT_SAMPLES_PER_SUB_RUN 10u
 #define DEFAULT_SAMPLES_PER_SYSTEM 1u
 
-typedef std::function<double(arma::vec&)> vecnorm;
+typedef std::function<double(Eigen::VectorXd&)> vecnorm;
 
 template <typename ParameterType, typename HyperparameterType>
 class MatrixParameterDistribution : public IMatrixDistribution
@@ -74,8 +74,8 @@ public:
     explicit ProblemDefinition(std::shared_ptr<DistributionType>& trueDistribution) :
         trueDistribution(trueDistribution) {
         int dimension = trueDistribution->getDimension();
-        std::function<void(arma::vec*)> bDistLambda = [dimension](arma::vec* output){
-            *output = arma::randn(dimension);
+        std::function<void(Eigen::VectorXd*)> bDistLambda = [dimension](Eigen::VectorXd* output){
+            *output = RandomNormal(dimension);
         };
         bDistribution = std::shared_ptr<IVectorDistribution>(
                 new VectorDistributionFromLambda(bDistLambda));
@@ -83,13 +83,13 @@ public:
         trueAuxMatrix = trueDistribution->convertAuxiliary(trueDistribution->parameters);
 
         // Define norms
-        energyNorm = [this](arma::vec& x) {
-            arma::vec result;
+        energyNorm = [this](Eigen::VectorXd& x) {
+            Eigen::VectorXd result;
             this->trueMatrix->apply(x, &result);
-            return sqrt(arma::dot(x, result));
+            return sqrt(x.dot(result));
         };
-        l2Norm = [](arma::vec& x) {
-            return sqrt(arma::dot(x, x));
+        l2Norm = [](Eigen::VectorXd& x) {
+            return sqrt(x.dot(x));
         };
     }
 };
@@ -118,7 +118,7 @@ public:
         this->name = name;
 
         qDistribution = parent->bDistribution;
-        std::function<void(arma::vec*)> sampler = [parent](arma::vec* output) {
+        std::function<void(Eigen::VectorXd*)> sampler = [parent](Eigen::VectorXd* output) {
             parent->bDistribution->drawSample(output);
         };
         quDistribution = std::shared_ptr<IVectorPairDistribution>(
@@ -130,7 +130,7 @@ public:
         normNames.emplace_back("Energy norm");
     }
 
-    virtual void subRun(DistributionType& bootstrapDistribution, arma::vec& rhs, arma::vec* output) const = 0;
+    virtual void subRun(DistributionType& bootstrapDistribution, Eigen::VectorXd& rhs, Eigen::VectorXd* output) const = 0;
 };
 
 template <typename ParameterType, typename HyperparameterType>
@@ -143,13 +143,13 @@ public:
     explicit NaiveRun(ParentType* parent) :
         ProblemRun<ParameterType, HyperparameterType>(parent, "Naive") {}
 
-    void subRun(DistributionType& bootstrapDistribution, arma::vec& rhs, arma::vec* output) const override {
+    void subRun(DistributionType& bootstrapDistribution, Eigen::VectorXd& rhs, Eigen::VectorXd* output) const override {
         auto sampled_mat = bootstrapDistribution.convert(bootstrapDistribution.parameters);
         auto aux_mat = bootstrapDistribution.convertAuxiliary(bootstrapDistribution.parameters);
 
         sampled_mat->preprocess();
 
-        arma::vec temp;
+        Eigen::VectorXd temp;
         aux_mat->apply(rhs, &temp);
         sampled_mat->solve(temp, output);
     }
@@ -174,7 +174,7 @@ public:
             ProblemRun<ParameterType, HyperparameterType>(parent, "Augmentation"),
             op_B(nullptr), op_R(nullptr) {}
 
-    void subRun(DistributionType& bootstrapDistribution, arma::vec& rhs, arma::vec* output) const override {
+    void subRun(DistributionType& bootstrapDistribution, Eigen::VectorXd& rhs, Eigen::VectorXd* output) const override {
         auto sampled_mat = bootstrapDistribution.convert(bootstrapDistribution.parameters);
 
         aug(this->samplesPerSubRun, this->samplesPerSystem, rhs, sampled_mat.get(), &bootstrapDistribution,
@@ -198,7 +198,7 @@ public:
             ProblemRun<ParameterType, HyperparameterType>(parent, "Energy-Norm Augmentation"),
             op_C(nullptr) {}
 
-    void subRun(DistributionType &bootstrapDistribution, arma::vec &rhs, arma::vec *output) const override {
+    void subRun(DistributionType &bootstrapDistribution, Eigen::VectorXd &rhs, Eigen::VectorXd *output) const override {
         auto sampled_mat = bootstrapDistribution.convert(bootstrapDistribution.parameters);
 
         enAug(this->samplesPerSubRun, this->samplesPerSystem, rhs, sampled_mat.get(), &bootstrapDistribution,
@@ -243,7 +243,7 @@ public:
         this->name = GetName();
     }
 
-    void subRun(DistributionType &bootstrapDistribution, arma::vec &rhs, arma::vec *output) const override {
+    void subRun(DistributionType &bootstrapDistribution, Eigen::VectorXd &rhs, Eigen::VectorXd *output) const override {
         auto sampled_mat = bootstrapDistribution.convert(bootstrapDistribution.parameters);
 
         std::function<double(int, int)> numerator_window;
@@ -309,7 +309,7 @@ public:
         this->name = GetName();
     }
 
-    void subRun(DistributionType &bootstrapDistribution, arma::vec &rhs, arma::vec *output) const override {
+    void subRun(DistributionType &bootstrapDistribution, Eigen::VectorXd &rhs, Eigen::VectorXd *output) const override {
         auto sampled_mat = bootstrapDistribution.convert(bootstrapDistribution.parameters);
 
         std::function<double(int, int, double)> numerator_window;
@@ -339,22 +339,25 @@ struct ProblemRunResults
 
     std::string name;
     std::vector<std::string> normNames;
-    arma::mat rawErrData;
-    arma::vec meanErrs;
-    arma::vec stdErrs;
-    arma::vec meanSolNorms;
-    arma::vec relativeErrs;
-    arma::vec relativeStdErrs;
+    Eigen::MatrixXd rawErrData;
+    Eigen::VectorXd meanErrs;
+    Eigen::VectorXd stdErrs;
+    Eigen::VectorXd meanSolNorms;
+    Eigen::VectorXd relativeErrs;
+    Eigen::VectorXd relativeStdErrs;
 
-    explicit ProblemRunResults(ProblemRunType* run, arma::mat& rawErrData, arma::mat& solutionNorms)
+    explicit ProblemRunResults(ProblemRunType* run, Eigen::MatrixXd& rawErrData, Eigen::MatrixXd& solutionNorms)
         : name(run->name),
         rawErrData(rawErrData) {
         normNames = run->normNames;
-        meanErrs = arma::mean(rawErrData, 1);
-        stdErrs = arma::stddev(rawErrData, 0, 1);
-        meanSolNorms = arma::mean(solutionNorms, 1);
-        relativeErrs = meanErrs / meanSolNorms;
-        relativeStdErrs = stdErrs / meanSolNorms;
+
+        meanErrs = rawErrData.rowwise().mean();
+        auto meansExpanded = meanErrs * Eigen::VectorXd::Ones(rawErrData.cols()).transpose();
+        stdErrs = Eigen::sqrt((rawErrData - meansExpanded).array().pow(2).rowwise().sum() / (rawErrData.cols() - 1)
+                / rawErrData.cols());
+        meanSolNorms = solutionNorms.rowwise().mean();
+        relativeErrs = meanErrs.cwiseQuotient(meanSolNorms);
+        relativeStdErrs = stdErrs.cwiseQuotient(meanSolNorms);
     }
 
     void print() {
@@ -400,8 +403,8 @@ public:
         for (const auto& run : problemRuns) {
             std::cout << "Running " << run->name << std::endl;
 
-            arma::mat errs = arma::zeros(run->norms.size(), run->numberSubRuns);
-            arma::mat sol_norms = arma::zeros(run->norms.size(), run->numberSubRuns);
+            Eigen::MatrixXd errs = Eigen::MatrixXd::Zero(run->norms.size(), run->numberSubRuns);
+            Eigen::MatrixXd sol_norms = Eigen::MatrixXd::Zero(run->norms.size(), run->numberSubRuns);
 
             size_t subRuns = run->numberSubRuns;
             size_t runsPerThread = subRuns / thread_count;
@@ -436,20 +439,20 @@ public:
                                                      trueDistribution, trueMatrix, trueAuxMatrix,
                                                      bDistribution, run_ptr,
                                                      i_thread, i_start, i_end]() {
-                    arma::mat thread_errs = arma::zeros(run_ptr->norms.size(), i_end - i_start);
-                    arma::mat thread_sol_norms = arma::zeros(run_ptr->norms.size(), i_end - i_start);
+                    Eigen::MatrixXd thread_errs = Eigen::MatrixXd::Zero(run_ptr->norms.size(), i_end - i_start);
+                    Eigen::MatrixXd thread_sol_norms = Eigen::MatrixXd::Zero(run_ptr->norms.size(), i_end - i_start);
 
                     double percentage_cout_increment = 0.01;
 
                     for (size_t i_system = i_start, index = 0; i_system < i_end; ++i_system, ++index) {
                         // Draw the rhs b from a Bayesian distribution and compute exact solution
-                        arma::vec b;
+                        Eigen::VectorXd b;
                         bDistribution->drawSample(&b);
 
-                        arma::vec Mb;
+                        Eigen::VectorXd Mb;
                         trueAuxMatrix->apply(b, &Mb);
 
-                        arma::vec trueSolution;
+                        Eigen::VectorXd trueSolution;
                         trueMatrix->solve(Mb, &trueSolution);
 
                         // Perform bootstrap operator augmentation
@@ -457,12 +460,12 @@ public:
                         trueDistribution->drawParameters(&noisy_parameters);
                         DistributionType bootstrap_distribution(noisy_parameters, trueDistribution->hyperparameters);
 
-                        arma::vec augResult;
+                        Eigen::VectorXd augResult;
                         run_ptr->subRun(bootstrap_distribution, b, &augResult);
 
                         for (int i_norm = 0; i_norm < run_ptr->norms.size(); ++i_norm) {
                             vecnorm current_norm = run_ptr->norms[i_norm];
-                            arma::vec diff = augResult - trueSolution;
+                            Eigen::VectorXd diff = augResult - trueSolution;
                             thread_errs(i_norm, index) = current_norm(diff);
                             thread_sol_norms(i_norm, index) = current_norm(trueSolution);
                         }
@@ -482,8 +485,8 @@ public:
                     // Write the results into errs and sol_norms on the main thread
                     // Use mutex to prevent race conditions
                     mut.lock();
-                    errs(arma::span::all, arma::span(i_start, i_end - 1)) = thread_errs;
-                    sol_norms(arma::span::all, arma::span(i_start, i_end - 1)) = thread_sol_norms;
+                    errs.block(0, i_start, run_ptr->norms.size(), i_end - i_start) = thread_errs;
+                    sol_norms.block(0, i_start, run_ptr->norms.size(), i_end - i_start) = thread_sol_norms;
                     mut.unlock();
                 };
 

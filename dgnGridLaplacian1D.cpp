@@ -1,49 +1,42 @@
 #include "diagnostics.h"
 #include "augmentation.h"
 
-using namespace arma;
-using namespace std;
-
-void formLaplacian(const vec& a, sp_mat* output) {
+void formLaplacian(const Eigen::VectorXd& a, Eigen::SparseMatrix<double>* output) {
     int n = a.size();
     double h = 1.0/((double)n);
     double h_sqrd = h * h;
-    vec mid = (a(span(0, n - 2)) + a(span(1, n - 1))) / h_sqrd;
-    vec left = -a(span(1, n - 2)) / h_sqrd;
+    Eigen::VectorXd mid = (a.segment(0, n - 1) + a.segment(1, n - 1)) / h_sqrd;
+    Eigen::VectorXd left = -a.segment(1, n - 2) / h_sqrd;
 
     int nnz = (n - 1) + 2 * (n - 1);
 
-    umat locs;
-    locs.set_size(2, nnz);
-    vec vals = zeros(nnz);
+    std::vector<Eigen::Triplet<double>> nonzeros;
+    nonzeros.reserve(nnz);
 
     int i = 0;
-    for (; i < n - 1; ++i) {
-        locs(0, i) = i;
-        locs(1, i) = i;
-        vals(i) = mid(i);
-    }
+    for (; i < n - 1; ++i)
+        nonzeros.emplace_back(Eigen::Triplet<double>(i, i, mid(i)));
+
     for (int j = 0; j < n - 2; ++j) {
-        locs(0, i) = j + 1;
-        locs(1, i) = j;
-        vals(i++) = left(j);
-
-        locs(0, i) = j;
-        locs(1, i) = j + 1;
-        vals(i++) = left(j);
+        nonzeros.emplace_back(Eigen::Triplet<double>(j, j+1, left(j)));
+        nonzeros.emplace_back(Eigen::Triplet<double>(j+1, j, left(j)));
     }
 
-    *output = sp_mat(locs, vals, n - 1, n - 1);
+    *output = Eigen::SparseMatrix<double>(n - 1, n - 1);
+    output->setFromTriplets(nonzeros.begin(), nonzeros.end());
 }
 
-void perturbBackground(const vec& a, const double std_dev, vec* output) {
-    auto rnd = conv_to<vec>::from(randi(size(a), distr_param(0, 1)));
-    vec tmp = std_dev * 2.0 * (rnd - 0.5) + 1.0;
-    *output = a % tmp;
+void perturbBackground(const Eigen::VectorXd& a, const double std_dev, Eigen::VectorXd* output) {
+    size_t n = a.size();
+    Eigen::VectorXd rnd = Eigen::VectorXd::Random(a.size());
+    for (size_t i = 0; i < n; ++i)
+        rnd(i) = (rnd(i) < 0.0 ? -1.0 : 1.0);
+    auto tmp = std_dev * rnd.array() + 1.0;
+    *output = a.cwiseProduct(tmp.matrix());
 }
 
 struct GridLaplacian1DParameters {
-    vec trueA;
+    Eigen::VectorXd trueA;
 };
 struct GridLaplacian1DHyperparameters {
     double stdDev;
@@ -57,7 +50,7 @@ public:
         perturbBackground(parameters.trueA, hyperparameters.stdDev, &output->trueA);
     }
     std::shared_ptr<IInvertibleMatrixOperator> convert(const GridLaplacian1DParameters& params) const override {
-        sp_mat matrix;
+        Eigen::SparseMatrix<double> matrix;
         formLaplacian(params.trueA, &matrix);
         return std::shared_ptr<IInvertibleMatrixOperator>(new DefaultSparseMatrixSample(matrix));
     }
@@ -77,10 +70,12 @@ typedef ProblemRun<GridLaplacian1DParameters, GridLaplacian1DHyperparameters>
 void dgnGridLaplacian1D() {
     size_t n = 128;
     double std_dev = 0.5;
-    vec true_a = ones(n);
+    Eigen::VectorXd true_a = Eigen::VectorXd::Ones(n);
     double h = 1.0 / (n - 1.0);
-    vec xs = regspace(1, n - 1) * h;
-    std::function<void(vec*)> bDistribution_func = [&xs](vec* output) { *output = arma::cos(2.0 * M_PI * xs); };
+    Eigen::VectorXd xs = Eigen::VectorXd::LinSpaced(n - 1,1, n - 1) * h;
+    std::function<void(Eigen::VectorXd*)> bDistribution_func = [&xs](Eigen::VectorXd* output) {
+        *output = Eigen::cos(2.0 * M_PI * xs.array());
+    };
     auto bDistribution = std::shared_ptr<IVectorDistribution>(new VectorDistributionFromLambda(bDistribution_func));
 
     auto params = GridLaplacian1DParameters{ true_a };
