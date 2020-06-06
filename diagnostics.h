@@ -10,6 +10,9 @@
 #include <memory>
 #include <functional>
 #include <iomanip>
+#include <chrono>
+#include <thread>
+#include <mutex>
 
 #define DEFAULT_TRUNCATION_WINDOW TRUNCATION_WINDOW_SOFT
 #define DEFAULT_POWER_METHOD_EPS 0.01

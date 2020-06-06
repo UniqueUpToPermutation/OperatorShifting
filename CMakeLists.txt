@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.7)
 project(OperatorAugmentation)
 
 find_package(Eigen3 3.3 REQUIRED NO_MODULE)
