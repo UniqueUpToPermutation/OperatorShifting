@@ -494,8 +494,8 @@ namespace aug {
                                     size_t progress = ((index + 1) * 100u) / (i_end - i_start);
                                     std::string strProgressBar;
                                     ProgressBar(percentage, 20, &strProgressBar);
-                                    std::cout << "Computing... " << progress << "% " << strProgressBar << "\r"
-                                        << STRING_PADDING <<  std::flush;
+                                    std::cout << "Computing... " << progress << "% " << strProgressBar
+                                        << STRING_PADDING << "\r" << std::flush;
                                 }
                             }
                         }
