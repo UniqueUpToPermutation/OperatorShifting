@@ -33,8 +33,8 @@ void perturbBackground1D(const Eigen::VectorXd& a, const double std_dev, Eigen::
     Eigen::VectorXd rnd = Eigen::VectorXd::Random(a.size());
     for (size_t i = 0; i < n; ++i)
         rnd(i) = (rnd(i) < 0.0 ? -1.0 : 1.0);
-    auto tmp = std_dev * rnd.array() + 1.0;
-    *output = a.cwiseProduct(tmp.matrix());
+    Eigen::VectorXd tmp = std_dev * rnd.array() + 1.0;
+    *output = a.cwiseProduct(tmp);
 }
 
 struct GridLaplacian1DParameters {

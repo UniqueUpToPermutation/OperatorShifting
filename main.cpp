@@ -3,8 +3,9 @@
 #include <vector>
 
 void dgnGridLaplacian1D();
+void dgnGridLaplacian2D();
 
 int main()
 {
-    dgnGridLaplacian1D();
+    dgnGridLaplacian2D();
 }

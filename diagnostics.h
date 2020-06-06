@@ -19,6 +19,8 @@
 #define DEFAULT_SAMPLES_PER_SYSTEM 1u
 
 namespace aug {
+    void ProgressBar(double percentage, size_t numCharacters, std::string* output);
+
     enum TruncationWindowType {
         TRUNCATION_WINDOW_SOFT = 0,
         TRUNCATION_WINDOW_HARD = 1
@@ -356,7 +358,7 @@ namespace aug {
             normNames = run->normNames;
 
             meanErrs = rawErrData.rowwise().mean();
-            auto meansExpanded = meanErrs * Eigen::VectorXd::Ones(rawErrData.cols()).transpose();
+            Eigen::MatrixXd meansExpanded = meanErrs * Eigen::VectorXd::Ones(rawErrData.cols()).transpose();
             stdErrs = Eigen::sqrt((rawErrData - meansExpanded).array().pow(2).rowwise().sum() / (rawErrData.cols() - 1)
                                   / rawErrData.cols());
             meanSolNorms = solutionNorms.rowwise().mean();
@@ -483,8 +485,11 @@ namespace aug {
                                         (long long) ((double) (index) / percentage_cout_increment) / (i_end - i_start);
 
                                 if (inc != last_inc || index == 0) {
+                                    double percentage = ((double)(index + 1)) / (double)(i_end - i_start);
                                     size_t progress = ((index + 1) * 100u) / (i_end - i_start);
-                                    std::cout << "Computing... " << progress << "%" << "\r" << std::flush;
+                                    std::string strProgressBar;
+                                    ProgressBar(percentage, 20, &strProgressBar);
+                                    std::cout << "Computing... " << progress << "% " << strProgressBar << "\r" << std::flush;
                                 }
                             }
                         }
