@@ -1,7 +1,9 @@
 #include "diagnostics.h"
 #include "augmentation.h"
 
-void formLaplacian(const Eigen::VectorXd& a, Eigen::SparseMatrix<double>* output) {
+using namespace aug;
+
+void formLaplacian1D(const Eigen::VectorXd& a, Eigen::SparseMatrix<double>* output) {
     int n = a.size();
     double h = 1.0/((double)n);
     double h_sqrd = h * h;
@@ -26,7 +28,7 @@ void formLaplacian(const Eigen::VectorXd& a, Eigen::SparseMatrix<double>* output
     output->setFromTriplets(nonzeros.begin(), nonzeros.end());
 }
 
-void perturbBackground(const Eigen::VectorXd& a, const double std_dev, Eigen::VectorXd* output) {
+void perturbBackground1D(const Eigen::VectorXd& a, const double std_dev, Eigen::VectorXd* output) {
     size_t n = a.size();
     Eigen::VectorXd rnd = Eigen::VectorXd::Random(a.size());
     for (size_t i = 0; i < n; ++i)
@@ -47,11 +49,11 @@ typedef ProblemDefinition<GridLaplacian1DParameters, GridLaplacian1DHyperparamet
 class GridLaplacian1DDistribution : public DistributionBase {
 public:
     void drawParameters(GridLaplacian1DParameters* output) const override {
-        perturbBackground(parameters.trueA, hyperparameters.stdDev, &output->trueA);
+        perturbBackground1D(parameters.trueA, hyperparameters.stdDev, &output->trueA);
     }
     std::shared_ptr<IInvertibleMatrixOperator> convert(const GridLaplacian1DParameters& params) const override {
         Eigen::SparseMatrix<double> matrix;
-        formLaplacian(params.trueA, &matrix);
+        formLaplacian1D(params.trueA, &matrix);
         return std::shared_ptr<IInvertibleMatrixOperator>(new DefaultSparseMatrixSample(matrix));
     }
     size_t getDimension() const override {
