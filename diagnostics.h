@@ -21,6 +21,8 @@
 #define DEFAULT_SAMPLES_PER_SUB_RUN 10u
 #define DEFAULT_SAMPLES_PER_SYSTEM 1u
 
+#define STRING_PADDING "                                                                                       "
+
 namespace aug {
     void ProgressBar(double percentage, size_t numCharacters, std::string* output);
 
@@ -409,7 +411,7 @@ namespace aug {
             std::mutex mut;
 
             for (const auto &run : problemRuns) {
-                std::cout << "Running " << run->name << std::endl;
+                std::cout << "Running " << run->name << STRING_PADDING << std::endl;
 
                 Eigen::MatrixXd errs = Eigen::MatrixXd::Zero(run->norms.size(), run->numberSubRuns);
                 Eigen::MatrixXd sol_norms = Eigen::MatrixXd::Zero(run->norms.size(), run->numberSubRuns);
@@ -492,7 +494,8 @@ namespace aug {
                                     size_t progress = ((index + 1) * 100u) / (i_end - i_start);
                                     std::string strProgressBar;
                                     ProgressBar(percentage, 20, &strProgressBar);
-                                    std::cout << "Computing... " << progress << "% " << strProgressBar << "\r" << std::flush;
+                                    std::cout << "Computing... " << progress << "% " << strProgressBar << "\r"
+                                        << STRING_PADDING <<  std::flush;
                                 }
                             }
                         }
