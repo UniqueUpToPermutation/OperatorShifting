@@ -107,7 +107,7 @@ namespace aug {
         if (k <= N) {
             double sum = 0.0;
             for (int j = k; j < N + 1; ++j)
-                sum += pow(1 - 1 / alpha, j - k);
+                sum += std::pow(1 - 1 / alpha, j - k);
             return (k + 1) - sum;
         } else
             return 0.0;
@@ -588,8 +588,8 @@ namespace aug {
 
                 for (int i = 0; i < order + 1; ++i) {
                     double dot_prod = Ahat_inv_q.dot(pows_q[i]);
-                    numerator += pow(alpha, -i - 2) * window_func_numerator(order, i, alpha) * dot_prod;
-                    denominator += pow(alpha, -i - 2) * window_func_denominator(order, i, alpha) * dot_prod;
+                    numerator += std::pow(alpha, -i - 2) * window_func_numerator(order, i, alpha) * dot_prod;
+                    denominator += std::pow(alpha, -i - 2) * window_func_denominator(order, i, alpha) * dot_prod;
                 }
             }
         }
@@ -694,7 +694,7 @@ namespace aug {
 
             eig = a_inv_v.dot(v) / a_inv_v_last.dot(v_last);
 
-            if (abs(eig - last_eig) / abs(eig) <= eps)
+            if (std::abs(eig - last_eig) / std::abs(eig) <= eps)
                 break;
 
             last_eig = eig;
@@ -768,8 +768,8 @@ namespace aug {
 
                 for (int i = 0; i < order + 1; ++i) {
                     double dot_prod = Ahat_inv_q.dot(pows_q[i]);
-                    numerator += pow(alpha, -i - 2) * window_func_numerator(order, i, alpha) * dot_prod;
-                    denominator += pow(alpha, -i - 2) * window_func_denominator(order, i, alpha) * dot_prod;
+                    numerator += std::pow(alpha, -i - 2) * window_func_numerator(order, i, alpha) * dot_prod;
+                    denominator += std::pow(alpha, -i - 2) * window_func_denominator(order, i, alpha) * dot_prod;
                 }
             }
         }
