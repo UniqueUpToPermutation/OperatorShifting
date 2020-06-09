@@ -315,6 +315,10 @@ namespace hfe {
 
 	Geometry* loadJson(const std::string& filename) {
 		ifstream f = ifstream(filename);
+
+        if (!f.is_open())
+            throw "Error: bad path!";
+
 		json j;
 		f >> j;
 

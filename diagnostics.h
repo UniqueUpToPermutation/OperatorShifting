@@ -35,12 +35,25 @@ namespace aug {
 
     template<typename ParameterType, typename HyperparameterType>
     class MatrixParameterDistribution : public IMatrixDistribution {
+    protected:
+        bool bIsDualDistribution;
+
     public:
         ParameterType parameters;
         HyperparameterType hyperparameters;
 
-        MatrixParameterDistribution(ParameterType &parameters, HyperparameterType &hyperparameters) :
-                parameters(parameters), hyperparameters(hyperparameters) {}
+        MatrixParameterDistribution(ParameterType &parameters,
+                HyperparameterType &hyperparameters,
+                bool bIsDualDistribution) :
+                parameters(parameters),
+                hyperparameters(hyperparameters),
+                bIsDualDistribution(bIsDualDistribution) {}
+
+        MatrixParameterDistribution(ParameterType &parameters,
+                                    HyperparameterType &hyperparameters) :
+                parameters(parameters),
+                hyperparameters(hyperparameters),
+                bIsDualDistribution(false) {}
 
         virtual void drawParameters(ParameterType *output) const = 0;
 
@@ -64,6 +77,10 @@ namespace aug {
             drawParameters(&params);
             *Ahat = convert(params);
             *Mhat = convertAuxiliary(params);
+        }
+
+        bool isDualDistribution() const override {
+            return bIsDualDistribution;
         }
     };
 
@@ -186,7 +203,7 @@ namespace aug {
             auto sampled_mat = bootstrapDistribution.convert(bootstrapDistribution.parameters);
 
             aug(this->samplesPerSubRun, this->samplesPerSystem, rhs, sampled_mat.get(), &bootstrapDistribution,
-                this->quDistribution.get(), this->op_R.get(), this->op_B.get(), output);
+                   this->quDistribution.get(), this->op_R.get(), this->op_B.get(), output);
         }
     };
 

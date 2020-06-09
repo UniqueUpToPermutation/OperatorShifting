@@ -64,6 +64,16 @@ namespace aug {
         virtual void solve(const Eigen::VectorXd& b, Eigen::VectorXd* result) const = 0;
     };
 
+    class SparseMatrixSampleNonInvertible : public IMatrixOperator {
+    public:
+        Eigen::SparseMatrix<double> sparse_mat;
+
+        void apply(const Eigen::VectorXd& b, Eigen::VectorXd* result) const override;
+        bool isIdentity() const override;
+
+        explicit SparseMatrixSampleNonInvertible(Eigen::SparseMatrix<double>& sparse_mat);
+    };
+
     class DefaultSparseMatrixSample : public IInvertibleMatrixOperator
     {
     public:
@@ -79,19 +89,13 @@ namespace aug {
         explicit DefaultSparseMatrixSample(Eigen::SparseMatrix<double>& sparse_mat);
     };
 
-    class IMatrixPairDistribution
-    {
-    public:
-        virtual void drawDualSample(std::shared_ptr<IInvertibleMatrixOperator>* Ahat,
-                                    std::shared_ptr<IMatrixOperator>* Mhat) const = 0;
-    };
-
-    class IMatrixDistribution : public IMatrixPairDistribution
+    class IMatrixDistribution
     {
     public:
         virtual void drawSample(std::shared_ptr<IInvertibleMatrixOperator>* Ahat) const = 0;
-        void drawDualSample(std::shared_ptr<IInvertibleMatrixOperator>* Ahat,
-                            std::shared_ptr<IMatrixOperator>* Mhat) const override;
+        virtual void drawDualSample(std::shared_ptr<IInvertibleMatrixOperator>* Ahat,
+                            std::shared_ptr<IMatrixOperator>* Mhat) const;
+        virtual bool isDualDistribution() const;
     };
 
     // The identity matrix as an operator
@@ -116,46 +120,46 @@ namespace aug {
 
     // Compute the standard augmentation factor
     double augFac(int num_system_samples,
-                  int num_per_system_samples,
-                  int dimension,
-                  IInvertibleMatrixOperator* op_Ahat,
-                  const IMatrixPairDistribution* bootstrap_mat_dist,
-                  const IVectorPairDistribution* q_u_dist,
-                  const IMatrixOperator* op_R,
-                  const IMatrixOperator* op_B);
+                     int num_per_system_samples,
+                     int dimension,
+                     IInvertibleMatrixOperator* op_Ahat,
+                     const IMatrixDistribution* bootstrap_mat_dist,
+                     const IVectorPairDistribution* q_u_dist,
+                     const IMatrixOperator* op_R,
+                     const IMatrixOperator* op_B);
 
     // Perform standard operator augmentation
     void aug(int num_system_samples,
-            int num_per_system_samples,
-            const Eigen::VectorXd& rhs,
-            IInvertibleMatrixOperator* op_Ahat,
-            const IMatrixPairDistribution* bootstrap_mat_dist,
-            const IVectorPairDistribution* q_u_dist,
-            const IMatrixOperator* op_R,
-            const IMatrixOperator* op_B,
-            Eigen::VectorXd* output);
+                int num_per_system_samples,
+                const Eigen::VectorXd& rhs,
+                IInvertibleMatrixOperator* op_Ahat,
+                const IMatrixDistribution* bootstrap_mat_dist,
+                const IVectorPairDistribution* q_u_dist,
+                const IMatrixOperator* op_R,
+                const IMatrixOperator* op_B,
+                Eigen::VectorXd* output);
 
     void aug(int num_system_samples,
-             int num_per_system_samples,
-             const Eigen::VectorXd& rhs,
-             IInvertibleMatrixOperator* op_Ahat,
-             const IMatrixPairDistribution* bootstrap_mat_dist,
-             Eigen::VectorXd* output);
+                int num_per_system_samples,
+                const Eigen::VectorXd& rhs,
+                IInvertibleMatrixOperator* op_Ahat,
+                const IMatrixDistribution* bootstrap_mat_dist,
+                Eigen::VectorXd* output);
 
     // Apply standard operator augmentation given augmentation factor
     void preAug(double beta,
-            const Eigen::VectorXd& rhs,
-            IInvertibleMatrixOperator* op_Ahat,
-            const IMatrixOperator* op_R,
-            const IMatrixOperator* op_B,
-            Eigen::VectorXd* output);
+                   const Eigen::VectorXd& rhs,
+                   IInvertibleMatrixOperator* op_Ahat,
+                   const IMatrixOperator* op_R,
+                   const IMatrixOperator* op_B,
+                   Eigen::VectorXd* output);
 
     // Compute the energy-norm augmentation factor
     double enAugFac(int num_system_samples,
             int num_per_system_samples,
             int dimension,
             IInvertibleMatrixOperator* op_Ahat,
-            const IMatrixPairDistribution* bootstrap_mat_dist,
+            const IMatrixDistribution* bootstrap_mat_dist,
             const IVectorDistribution* q_dist);
 
     // Perform energy-norm augmentation
@@ -163,7 +167,7 @@ namespace aug {
                int num_per_system_samples,
                const Eigen::VectorXd& rhs,
                IInvertibleMatrixOperator* op_Ahat,
-               const IMatrixPairDistribution* bootstrap_mat_dist,
+               const IMatrixDistribution* bootstrap_mat_dist,
                const IVectorDistribution* q_dist,
                const IMatrixOperator* op_C,
                Eigen::VectorXd* output);
@@ -172,7 +176,7 @@ namespace aug {
                int num_per_system_samples,
                const Eigen::VectorXd& rhs,
                IInvertibleMatrixOperator* op_Ahat,
-               const IMatrixPairDistribution* bootstrap_mat_dist,
+               const IMatrixDistribution* bootstrap_mat_dist,
                Eigen::VectorXd* output);
 
     // Apply energy-norm operator augmentation given augmentation factor
@@ -188,7 +192,7 @@ namespace aug {
                         int dimension,
                         int order,
                         IInvertibleMatrixOperator* op_Ahat,
-                        const IMatrixPairDistribution* bootstrap_mat_dist,
+                        const IMatrixDistribution* bootstrap_mat_dist,
                         const IVectorDistribution* q_dist,
                         std::function<double(int, int)>& window_func_numerator,
                         std::function<double(int, int)>& window_func_denominator);
@@ -199,7 +203,7 @@ namespace aug {
                     const Eigen::VectorXd& rhs,
                     int order,
                     IInvertibleMatrixOperator* op_Ahat,
-                    const IMatrixPairDistribution* bootstrap_mat_dist,
+                    const IMatrixDistribution* bootstrap_mat_dist,
                     const IVectorDistribution* q_dist,
                     const IMatrixOperator* op_C,
                     std::function<double(int, int)>& window_func_numerator,
@@ -211,7 +215,7 @@ namespace aug {
                     const Eigen::VectorXd& rhs,
                     int order,
                     IInvertibleMatrixOperator* op_Ahat,
-                    const IMatrixPairDistribution* bootstrap_mat_dist,
+                    const IMatrixDistribution* bootstrap_mat_dist,
                     const IVectorDistribution* q_dist,
                     const IMatrixOperator* op_C,
                     Eigen::VectorXd* output);
@@ -221,7 +225,7 @@ namespace aug {
                     const Eigen::VectorXd& rhs,
                     int order,
                     IInvertibleMatrixOperator* op_Ahat,
-                    const IMatrixPairDistribution* bootstrap_mat_dist,
+                    const IMatrixDistribution* bootstrap_mat_dist,
                     Eigen::VectorXd* output);
 
     void enAugTrunc(int num_system_samples,
@@ -229,7 +233,7 @@ namespace aug {
                     const Eigen::VectorXd& rhs,
                     int order,
                     IInvertibleMatrixOperator* op_Ahat,
-                    const IMatrixPairDistribution* bootstrap_mat_dist,
+                    const IMatrixDistribution* bootstrap_mat_dist,
                     std::function<double(int, int)>& window_func_numerator,
                     std::function<double(int, int)>& window_func_denominator,
                     Eigen::VectorXd* output);
@@ -241,7 +245,7 @@ namespace aug {
                          int order,
                          double alpha,
                          IInvertibleMatrixOperator* op_Ahat,
-                         const IMatrixPairDistribution* bootstrap_mat_dist,
+                         const IMatrixDistribution* bootstrap_mat_dist,
                          const IVectorDistribution* q_dist,
                          std::function<double(int, int, double)>& window_func_numerator,
                          std::function<double(int, int, double)>& window_func_denominator);
@@ -253,7 +257,7 @@ namespace aug {
                     int order,
                     double alpha,
                     IInvertibleMatrixOperator* op_Ahat,
-                    const IMatrixPairDistribution* bootstrap_mat_dist,
+                    const IMatrixDistribution* bootstrap_mat_dist,
                     const IVectorDistribution* q_dist,
                     const IMatrixOperator* op_C,
                     std::function<double(int, int, double)>& window_func_numerator,
@@ -266,7 +270,7 @@ namespace aug {
                          int order,
                          double alpha,
                          IInvertibleMatrixOperator* op_Ahat,
-                         const IMatrixPairDistribution* bootstrap_mat_dist,
+                         const IMatrixDistribution* bootstrap_mat_dist,
                          const IVectorDistribution* q_dist,
                          const IMatrixOperator* op_C,
                          Eigen::VectorXd* output);
@@ -277,7 +281,7 @@ namespace aug {
                          int order,
                          double alpha,
                          IInvertibleMatrixOperator* op_Ahat,
-                         const IMatrixPairDistribution* bootstrap_mat_dist,
+                         const IMatrixDistribution* bootstrap_mat_dist,
                          Eigen::VectorXd* output);
 
     void enAugShiftTrunc(int num_system_samples,
@@ -286,7 +290,7 @@ namespace aug {
                          int order,
                          double alpha,
                          IInvertibleMatrixOperator* op_Ahat,
-                         const IMatrixPairDistribution* bootstrap_mat_dist,
+                         const IMatrixDistribution* bootstrap_mat_dist,
                          std::function<double(int, int, double)>& window_func_numerator,
                          std::function<double(int, int, double)>& window_func_denominator,
                          Eigen::VectorXd* output);
@@ -298,7 +302,7 @@ namespace aug {
                                     int order,
                                     double eps,
                                     IInvertibleMatrixOperator* op_Ahat,
-                                    const IMatrixPairDistribution* bootstrap_mat_dist,
+                                    const IMatrixDistribution* bootstrap_mat_dist,
                                     const IVectorDistribution* q_dist,
                                     std::function<double(int, int, double)>& window_func_numerator,
                                     std::function<double(int, int, double)>& window_func_denominator);
@@ -310,7 +314,7 @@ namespace aug {
                               int order,
                               double eps,
                               IInvertibleMatrixOperator* op_Ahat,
-                              const IMatrixPairDistribution* bootstrap_mat_dist,
+                              const IMatrixDistribution* bootstrap_mat_dist,
                               const IVectorDistribution* q_dist,
                               const IMatrixOperator* op_C,
                               std::function<double(int, int, double)>& window_func_numerator,
@@ -323,7 +327,7 @@ namespace aug {
                               int order,
                               double eps,
                               IInvertibleMatrixOperator* op_Ahat,
-                              const IMatrixPairDistribution* bootstrap_mat_dist,
+                              const IMatrixDistribution* bootstrap_mat_dist,
                               const IVectorDistribution* q_dist,
                               const IMatrixOperator* op_C,
                               Eigen::VectorXd* output);
@@ -334,7 +338,7 @@ namespace aug {
                               int order,
                               double eps,
                               IInvertibleMatrixOperator* op_Ahat,
-                              const IMatrixPairDistribution* bootstrap_mat_dist,
+                              const IMatrixDistribution* bootstrap_mat_dist,
                               Eigen::VectorXd* output);
 
     void enAugAccelShiftTrunc(int num_system_samples,
@@ -343,7 +347,7 @@ namespace aug {
                               int order,
                               double eps,
                               IInvertibleMatrixOperator* op_Ahat,
-                              const IMatrixPairDistribution* bootstrap_mat_dist,
+                              const IMatrixDistribution* bootstrap_mat_dist,
                               std::function<double(int, int, double)>& window_func_numerator,
                               std::function<double(int, int, double)>& window_func_denominator,
                               Eigen::VectorXd* output);

@@ -4,8 +4,10 @@
 
 void dgnGridLaplacian1D();
 void dgnGridLaplacian2D();
+void dgnMeshLaplacian();
+void dgnGraphEdgePerturb();
 
 int main()
 {
-    dgnGridLaplacian2D();
+    dgnGraphEdgePerturb();
 }

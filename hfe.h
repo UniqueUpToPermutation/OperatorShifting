@@ -4,6 +4,7 @@
 #include <vector>
 #include <functional>
 #include <Eigen/Dense>
+#include "meshlap.h"
 
 namespace hfe
 {
@@ -59,7 +60,7 @@ namespace hfe
 		inline Eigen::Vector3d* ptrNormal();
 		inline Eigen::Vector3d* ptrTangent();
 		inline Eigen::Vector3d position() const;
-		inline Eigen::Vector3d uv() const;
+		inline Eigen::Vector2d uv() const;
 		inline Eigen::Vector3d normal() const;
 		inline Eigen::Vector3d tangent() const;
         inline void setPosition(const double x, const double y, const double z);
@@ -333,7 +334,7 @@ namespace hfe
 		friend Geometry* loadJson(const std::string& path);
 	};
 
-	Geometry* load(const std::string& path);
+    Geometry* load(const std::string& path);
 	Geometry* loadJson(const std::string& path);
 
 	inline Eigen::Vector3d* Vertex::ptrPosition() {
@@ -351,7 +352,7 @@ namespace hfe
     inline Eigen::Vector3d Vertex::position() const {
 	    return cgeo_->vertexPositions[id_];
 	}
-    inline Eigen::Vector3d Vertex::uv() const {
+    inline Eigen::Vector2d Vertex::uv() const {
 	    return cgeo_->vertexUVs[id_];
 	}
     inline Eigen::Vector3d Vertex::normal() const {

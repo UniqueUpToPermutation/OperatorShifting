@@ -1,6 +1,8 @@
 #include "meshlap.h"
 #include "hfe.h"
 
+#include <iostream>
+
 using namespace Eigen;
 
 namespace hfe {
@@ -13,12 +15,27 @@ namespace hfe {
             for (auto f = v.faces(); f.isValid(); f.next())
                 mass += f().area();
             mass /= 3.0;
+            vec(v.id()) = mass;
         }
+
+        *output = vec;
+    }
+
+    void massMatrix(const Geometry &geo, Eigen::SparseMatrix<double> *output) {
+        Eigen::VectorXd massVec;
+        massVector(geo, &massVec);
+
+        std::vector<Triplet<double>> nzEntries;
+        nzEntries.reserve(geo.vertexCount());
+        for (int i = 0, count = geo.vertexCount(); i < count; ++i)
+            nzEntries.emplace_back(Triplet<double>(i, i, massVec(i)));
+
+        *output = Eigen::SparseMatrix<double>(geo.vertexCount(), geo.vertexCount());
+        output->setFromTriplets(nzEntries.begin(), nzEntries.end());
     }
 
     void enumLaplacian(const Geometry& geo, const Eigen::VectorXd& mass, std::vector<Eigen::Triplet<double>>* output) {
-        std::vector<Triplet<double>> nzEntries;
-        nzEntries.reserve(geo.edgeCount() + geo.vertexCount());
+        output->reserve(geo.edgeCount() + geo.vertexCount());
 
         // For every vertex
         for (Vertex v = geo.constGetVertex(0); v.isValid(); v = v.nextById()) {
@@ -48,9 +65,9 @@ namespace hfe {
 
                 totalWeight += weight;
 
-                nzEntries.emplace_back(Triplet<double>(v.id(), e.head().id(), weight / mass(v.id())));
+                output->emplace_back(Triplet<double>(v.id(), e.head().id(), weight / mass(v.id())));
             }
-            nzEntries.emplace_back(Triplet<double>(v.id(), v.id(), -totalWeight / mass(v.id())));
+            output->emplace_back(Triplet<double>(v.id(), v.id(), -totalWeight / mass(v.id())));
         }
     }
 
@@ -59,9 +76,24 @@ namespace hfe {
         enumLaplacian(geo, mass, output);
     }
 
+    void enumWeakLaplacianPositiveDefinite(const Geometry& geo, std::vector<Eigen::Triplet<double>>* output) {
+        VectorXd mass = -VectorXd::Ones(geo.vertexCount());
+        enumLaplacian(geo, mass, output);
+    }
+
     void weakLaplacian(const Geometry& geo, Eigen::SparseMatrix<double>* output) {
         std::vector<Triplet<double>> nzEntries;
         enumWeakLaplacian(geo, &nzEntries);
+
+        output->resize(geo.vertexCount(), geo.vertexCount());
+        output->setFromTriplets(nzEntries.begin(), nzEntries.end());
+    }
+
+    void weakLaplacianPositiveDefinite(const Geometry& geo, Eigen::SparseMatrix<double>* output) {
+        std::vector<Triplet<double>> nzEntries;
+        enumWeakLaplacianPositiveDefinite(geo, &nzEntries);
+
+        output->resize(geo.vertexCount(), geo.vertexCount());
         output->setFromTriplets(nzEntries.begin(), nzEntries.end());
     }
 
@@ -71,9 +103,17 @@ namespace hfe {
         enumLaplacian(geo, mass, output);
     }
 
+    void enumLaplacianPositiveDefinite(const Geometry& geo, std::vector<Eigen::Triplet<double>>* output) {
+        Eigen::VectorXd mass;
+        massVector(geo, &mass);
+        mass = -mass; // flip the signs of the mass
+        enumLaplacian(geo, mass, output);
+    }
+
     void laplacian(const Geometry& geo, SparseMatrix<double>* output) {
         std::vector<Eigen::Triplet<double>> nzEntries;
         enumLaplacian(geo, &nzEntries);
+        output->resize(geo.vertexCount(), geo.vertexCount());
         output->setFromTriplets(nzEntries.begin(), nzEntries.end());
     }
 }
