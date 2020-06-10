@@ -1,7 +1,7 @@
 #include "augmentation.h"
 
 namespace aug {
-    Eigen::VectorXd RandomNormal(size_t dimension) {
+    Eigen::VectorXd randomNormal(size_t dimension) {
         auto U1 = 0.5 * (Eigen::VectorXd::Random(dimension).array() + 1.0);
         auto U2 = 0.5 * (Eigen::VectorXd::Random(dimension).array() + 1.0);
         // Box transform
@@ -193,7 +193,7 @@ namespace aug {
 
             for (int i_rhs = 0; i_rhs < num_per_system_samples; ++i_rhs) {
                 if (q_u_dist == nullptr) {
-                    q = RandomNormal(dimension);
+                    q = randomNormal(dimension);
                     u = q;
                 } else {
                     q_u_dist->drawSample(&q, &u);
@@ -311,7 +311,7 @@ namespace aug {
 
             for (int i_rhs = 0; i_rhs < num_per_system_samples; ++i_rhs) {
                 if (q_dist == nullptr)
-                    q = RandomNormal(dimension);
+                    q = randomNormal(dimension);
                 else
                     q_dist->drawSample(&q);
 
@@ -414,7 +414,7 @@ namespace aug {
                 pows_q.clear();
 
                 if (q_dist == nullptr)
-                    q = RandomNormal(dimension);
+                    q = randomNormal(dimension);
                 else
                     q_dist->drawSample(&q);
 
@@ -568,7 +568,7 @@ namespace aug {
                 pows_q.clear();
 
                 if (q_dist == nullptr)
-                    q = RandomNormal(dimension);
+                    q = randomNormal(dimension);
                 else
                     q_dist->drawSample(&q);
 
@@ -745,7 +745,7 @@ namespace aug {
                 pows_q.clear();
 
                 if (q_dist == nullptr)
-                    q = RandomNormal(dimension);
+                    q = randomNormal(dimension);
                 else
                     q_dist->drawSample(&q);
 

@@ -84,7 +84,7 @@ void dgnGridLaplacian1D() {
     auto hyperparams = GridLaplacian1DHyperparameters{ std_dev };
     auto true_mat_dist = std::shared_ptr<DistributionBase>(new GridLaplacian1DDistribution(params, hyperparams));
     auto problem_def = std::shared_ptr<ProblemDefType>(new ProblemDefType(true_mat_dist));
-    problem_def->bDistribution = bDistribution;
+    // problem_def->bDistribution = bDistribution; // Don't use the above distribution, use random normal by default
     auto diagnostics = DiagnosticsType(problem_def);
 
     // Naive run

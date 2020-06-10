@@ -100,7 +100,7 @@ namespace aug {
                 trueDistribution(trueDistribution) {
             int dimension = trueDistribution->getDimension();
             std::function<void(Eigen::VectorXd *)> bDistLambda = [dimension](Eigen::VectorXd *output) {
-                *output = RandomNormal(dimension);
+                *output = randomNormal(dimension);
             };
             bDistribution = std::shared_ptr<IVectorDistribution>(
                     new VectorDistributionFromLambda(bDistLambda));

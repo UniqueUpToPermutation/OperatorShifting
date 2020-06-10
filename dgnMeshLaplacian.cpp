@@ -1,5 +1,4 @@
-#include "augmentation.h"
-#include "diagnostics.h"
+#include "auxDiagnostics.h"
 #include "hfe.h"
 #include "meshlap.h"
 
@@ -70,11 +69,11 @@ typedef ProblemRun<MeshLaplacianParameters, MeshLaplacianHyperparameters>
         ProblemRunType;
 
 void dgnMeshLaplacian() {
-    std::shared_ptr<Geometry> geo(loadJson("Meshes/cube.json"));
+    std::shared_ptr<Geometry> geo(loadJson("Meshes/bunny_low.json"));
 
     double scaling = (geo->getBoundingBox().upper - geo->getBoundingBox().lower).norm();
 
-    double stddev = 0.0001;
+    double stddev = 0.005;
     double gamma = 0.1; // Make system invertible by shifting
     stddev *= scaling;
 
@@ -90,21 +89,14 @@ void dgnMeshLaplacian() {
     // Naive run
     auto run = std::shared_ptr<ProblemRunType>(
             new NaiveRun<MeshLaplacianParameters, MeshLaplacianHyperparameters>(problemDef.get()));
-    run->numberSubRuns = 1000;
+    run->numberSubRuns = 10000;
     diagnostics.addRun(run);
 
     // Op Augmentation
     run = std::shared_ptr<ProblemRunType>(
-            new AugmentationRun<MeshLaplacianParameters, MeshLaplacianHyperparameters>(problemDef.get()));
+            new AuxAugmentationRun<MeshLaplacianParameters, MeshLaplacianHyperparameters>(problemDef.get()));
     run->numberSubRuns = 100;
-    run->samplesPerSubRun = 10;
-    diagnostics.addRun(run);
-
-    // Op Augmentation
-    run = std::shared_ptr<ProblemRunType>(
-            new EnergyAugmentationRun<MeshLaplacianParameters, MeshLaplacianHyperparameters>(problemDef.get()));
-    run->numberSubRuns = 100;
-    run->samplesPerSubRun = 10;
+    run->samplesPerSubRun = 100;
     diagnostics.addRun(run);
 
     diagnostics.run(4);

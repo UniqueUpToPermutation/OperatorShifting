@@ -1,3 +1,5 @@
+// Augmentation for systems of the form Ahat x = b
+
 #ifndef OPERATORAUGMENTATION_AUGMENTATION_H_
 #define OPERATORAUGMENTATION_AUGMENTATION_H_
 
@@ -14,7 +16,7 @@
 
 namespace aug {
 
-    Eigen::VectorXd RandomNormal(size_t dimension);
+    Eigen::VectorXd randomNormal(size_t dimension);
 
     class IVectorDistribution
     {
