@@ -1,0 +1,236 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% dgnGridLaplacian1D
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Naive: L2 norm: 0.1146 +- 0.0004715
+Naive: L2 norm (Relative): 0.3331 +- 0.00137
+Naive: Energy norm: 0.9327 +- 0.0008272
+Naive: Energy norm (Relative): 0.7411 +- 0.0006573
+
+Augmentation: L2 norm: 0.02054 +- 0.001703
+Augmentation: L2 norm (Relative): 0.05969 +- 0.004949
+Augmentation: Energy norm: 0.6269 +- 0.0007686
+Augmentation: Energy norm (Relative): 0.4982 +- 0.0006107
+
+Energy-Norm Augmentation: L2 norm: 0.06899 +- 0.002822
+Energy-Norm Augmentation: L2 norm (Relative): 0.2005 +- 0.008202
+Energy-Norm Augmentation: Energy norm: 0.5617 +- 0.005164
+Energy-Norm Augmentation: Energy norm (Relative): 0.4464 +- 0.004104
+
+Trunc. En-Norm Augmentation (Order 2): L2 norm: 0.0685 +- 0.004081
+Trunc. En-Norm Augmentation (Order 2): L2 norm (Relative): 0.1991 +- 0.01186
+Trunc. En-Norm Augmentation (Order 2): Energy norm: 0.7907 +- 0.005346
+Trunc. En-Norm Augmentation (Order 2): Energy norm (Relative): 0.6283 +- 0.004248
+
+Trunc. En-Norm Augmentation (Order 4): L2 norm: 0.03418 +- 0.003002
+Trunc. En-Norm Augmentation (Order 4): L2 norm (Relative): 0.09932 +- 0.008725
+Trunc. En-Norm Augmentation (Order 4): Energy norm: 0.5826 +- 0.002378
+Trunc. En-Norm Augmentation (Order 4): Energy norm (Relative): 0.4629 +- 0.00189
+
+Trunc. En-Norm Augmentation (Order 6): L2 norm: 0.0557 +- 0.002775
+Trunc. En-Norm Augmentation (Order 6): L2 norm (Relative): 0.1619 +- 0.008065
+Trunc. En-Norm Augmentation (Order 6): Energy norm: 0.5627 +- 0.003904
+Trunc. En-Norm Augmentation (Order 6): Energy norm (Relative): 0.4471 +- 0.003102
+
+Trunc. En-Norm Augmentation (Order 2, Hard Window): L2 norm: 0.02296 +- 0.002642
+Trunc. En-Norm Augmentation (Order 2, Hard Window): L2 norm (Relative): 0.06672 +- 0.007677
+Trunc. En-Norm Augmentation (Order 2, Hard Window): Energy norm: 0.6011 +- 0.001398
+Trunc. En-Norm Augmentation (Order 2, Hard Window): Energy norm (Relative): 0.4776 +- 0.001111
+
+Trunc. En-Norm Augmentation (Order 4, Hard Window): L2 norm: 0.0548 +- 0.003061
+Trunc. En-Norm Augmentation (Order 4, Hard Window): L2 norm (Relative): 0.1593 +- 0.008897
+Trunc. En-Norm Augmentation (Order 4, Hard Window): Energy norm: 0.5681 +- 0.004042
+Trunc. En-Norm Augmentation (Order 4, Hard Window): Energy norm (Relative): 0.4514 +- 0.003211
+
+Accel. Shift. Trunc. En-Norm Augmentation (Order 2): L2 norm: 0.02642 +- 0.002629
+Accel. Shift. Trunc. En-Norm Augmentation (Order 2): L2 norm (Relative): 0.07679 +- 0.00764
+Accel. Shift. Trunc. En-Norm Augmentation (Order 2): Energy norm: 0.601 +- 0.001384
+Accel. Shift. Trunc. En-Norm Augmentation (Order 2): Energy norm (Relative): 0.4776 +- 0.001099
+
+Accel. Shift. Trunc. En-Norm Augmentation (Order 4): L2 norm: 0.05636 +- 0.002701
+Accel. Shift. Trunc. En-Norm Augmentation (Order 4): L2 norm (Relative): 0.1638 +- 0.007848
+Accel. Shift. Trunc. En-Norm Augmentation (Order 4): Energy norm: 0.5664 +- 0.003595
+Accel. Shift. Trunc. En-Norm Augmentation (Order 4): Energy norm (Relative): 0.4501 +- 0.002857
+
+Accel. Shift. Trunc. En-Norm Augmentation (Order 6): L2 norm: 0.0672 +- 0.002824
+Accel. Shift. Trunc. En-Norm Augmentation (Order 6): L2 norm (Relative): 0.1953 +- 0.008206
+Accel. Shift. Trunc. En-Norm Augmentation (Order 6): Energy norm: 0.5639 +- 0.004573
+Accel. Shift. Trunc. En-Norm Augmentation (Order 6): Energy norm (Relative): 0.4481 +- 0.003634
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% dgnGridLaplacian2D
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Naive: L2 norm: 0.05683 +- 0.0001064
+Naive: L2 norm (Relative): 0.1612 +- 0.0003019
+Naive: Energy norm: 1.227 +- 0.0005188
+Naive: Energy norm (Relative): 0.4734 +- 0.0002001
+
+Augmentation: L2 norm: 0.01382 +- 0.0003103
+Augmentation: L2 norm (Relative): 0.03919 +- 0.00088
+Augmentation: Energy norm: 1.004 +- 0.003243
+Augmentation: Energy norm (Relative): 0.3871 +- 0.001251
+
+Energy-Norm Augmentation: L2 norm: 0.04711 +- 0.0008709
+Energy-Norm Augmentation: L2 norm (Relative): 0.1336 +- 0.00247
+Energy-Norm Augmentation: Energy norm: 0.9419 +- 0.001815
+Energy-Norm Augmentation: Energy norm (Relative): 0.3633 +- 0.0006998
+
+Trunc. En-Norm Augmentation (Order 2): L2 norm: 0.03506 +- 0.0009182
+Trunc. En-Norm Augmentation (Order 2): L2 norm (Relative): 0.09944 +- 0.002604
+Trunc. En-Norm Augmentation (Order 2): Energy norm: 1.122 +- 0.004319
+Trunc. En-Norm Augmentation (Order 2): Energy norm (Relative): 0.4328 +- 0.001666
+
+Trunc. En-Norm Augmentation (Order 4): L2 norm: 0.02832 +- 0.0007334
+Trunc. En-Norm Augmentation (Order 4): L2 norm (Relative): 0.08033 +- 0.00208
+Trunc. En-Norm Augmentation (Order 4): Energy norm: 0.9546 +- 0.002154
+Trunc. En-Norm Augmentation (Order 4): Energy norm (Relative): 0.3682 +- 0.0008308
+
+Trunc. En-Norm Augmentation (Order 6): L2 norm: 0.04113 +- 0.0008644
+Trunc. En-Norm Augmentation (Order 6): L2 norm (Relative): 0.1167 +- 0.002451
+Trunc. En-Norm Augmentation (Order 6): Energy norm: 0.9436 +- 0.001894
+Trunc. En-Norm Augmentation (Order 6): Energy norm (Relative): 0.3639 +- 0.0007304
+
+Trunc. En-Norm Augmentation (Order 2, Hard Window): L2 norm: 0.02218 +- 0.0008176
+Trunc. En-Norm Augmentation (Order 2, Hard Window): L2 norm (Relative): 0.06291 +- 0.002319
+Trunc. En-Norm Augmentation (Order 2, Hard Window): Energy norm: 0.9664 +- 0.002465
+Trunc. En-Norm Augmentation (Order 2, Hard Window): Energy norm (Relative): 0.3727 +- 0.0009507
+
+Trunc. En-Norm Augmentation (Order 4, Hard Window): L2 norm: 0.03964 +- 0.0008754
+Trunc. En-Norm Augmentation (Order 4, Hard Window): L2 norm (Relative): 0.1124 +- 0.002483
+Trunc. En-Norm Augmentation (Order 4, Hard Window): Energy norm: 0.9437 +- 0.001916
+Trunc. En-Norm Augmentation (Order 4, Hard Window): Energy norm (Relative): 0.364 +- 0.0007388
+
+Accel. Shift. Trunc. En-Norm Augmentation (Order 2): L2 norm: 0.03267 +- 0.0008538
+Accel. Shift. Trunc. En-Norm Augmentation (Order 2): L2 norm (Relative): 0.09267 +- 0.002421
+Accel. Shift. Trunc. En-Norm Augmentation (Order 2): Energy norm: 0.9491 +- 0.002263
+Accel. Shift. Trunc. En-Norm Augmentation (Order 2): Energy norm (Relative): 0.366 +- 0.0008729
+
+Accel. Shift. Trunc. En-Norm Augmentation (Order 4): L2 norm: 0.05485 +- 0.0007633
+Accel. Shift. Trunc. En-Norm Augmentation (Order 4): L2 norm (Relative): 0.1556 +- 0.002165
+Accel. Shift. Trunc. En-Norm Augmentation (Order 4): Energy norm: 0.9447 +- 0.001749
+Accel. Shift. Trunc. En-Norm Augmentation (Order 4): Energy norm (Relative): 0.3644 +- 0.0006746
+
+Accel. Shift. Trunc. En-Norm Augmentation (Order 6): L2 norm: 0.06278 +- 0.0008135
+Accel. Shift. Trunc. En-Norm Augmentation (Order 6): L2 norm (Relative): 0.178 +- 0.002307
+Accel. Shift. Trunc. En-Norm Augmentation (Order 6): Energy norm: 0.9508 +- 0.00184
+Accel. Shift. Trunc. En-Norm Augmentation (Order 6): Energy norm (Relative): 0.3667 +- 0.0007097
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% dgnGraphEdgePerturb
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Naive: L2 norm: 1684 +- 375.9
+Naive: L2 norm (Relative): 19.52 +- 4.358
+Naive: Energy norm: 1250 +- 345.6
+Naive: Energy norm (Relative): 52.84 +- 14.61
+
+Augmentation: L2 norm: 146.5 +- 73
+Augmentation: L2 norm (Relative): 1.609 +- 0.8016
+Augmentation: Energy norm: 82.42 +- 74.71
+Augmentation: Energy norm (Relative): 3.433 +- 3.112
+
+Energy-Norm Augmentation: L2 norm: 84.91 +- 5.137
+Energy-Norm Augmentation: L2 norm (Relative): 0.999 +- 0.06043
+Energy-Norm Augmentation: Energy norm: 23.88 +- 0.8356
+Energy-Norm Augmentation: Energy norm (Relative): 1.016 +- 0.03555
+
+Trunc. En-Norm Augmentation (Order 2): L2 norm: 675.4 +- 188.4
+Trunc. En-Norm Augmentation (Order 2): L2 norm (Relative): 7.703 +- 2.149
+Trunc. En-Norm Augmentation (Order 2): Energy norm: 500.1 +- 122.7
+Trunc. En-Norm Augmentation (Order 2): Energy norm (Relative): 21.03 +- 5.16
+
+Trunc. En-Norm Augmentation (Order 4): L2 norm: 208 +- 64.19
+Trunc. En-Norm Augmentation (Order 4): L2 norm (Relative): 2.294 +- 0.7077
+Trunc. En-Norm Augmentation (Order 4): Energy norm: 160.5 +- 62.34
+Trunc. En-Norm Augmentation (Order 4): Energy norm (Relative): 6.621 +- 2.571
+
+Trunc. En-Norm Augmentation (Order 6): L2 norm: 148.5 +- 49.29
+Trunc. En-Norm Augmentation (Order 6): L2 norm (Relative): 1.704 +- 0.5657
+Trunc. En-Norm Augmentation (Order 6): Energy norm: 82.83 +- 25.13
+Trunc. En-Norm Augmentation (Order 6): Energy norm (Relative): 3.465 +- 1.051
+
+Trunc. En-Norm Augmentation (Order 2, Hard Window): L2 norm: 400.5 +- 184.8
+Trunc. En-Norm Augmentation (Order 2, Hard Window): L2 norm (Relative): 4.553 +- 2.101
+Trunc. En-Norm Augmentation (Order 2, Hard Window): Energy norm: 305.2 +- 140.3
+Trunc. En-Norm Augmentation (Order 2, Hard Window): Energy norm (Relative): 12.84 +- 5.902
+
+Trunc. En-Norm Augmentation (Order 4, Hard Window): L2 norm: 207 +- 93.28
+Trunc. En-Norm Augmentation (Order 4, Hard Window): L2 norm (Relative): 2.395 +- 1.079
+Trunc. En-Norm Augmentation (Order 4, Hard Window): Energy norm: 142.7 +- 69.78
+Trunc. En-Norm Augmentation (Order 4, Hard Window): Energy norm (Relative): 6.026 +- 2.948
+
+Accel. Shift. Trunc. En-Norm Augmentation (Order 2): L2 norm: 880.3 +- 1008
+Accel. Shift. Trunc. En-Norm Augmentation (Order 2): L2 norm (Relative): 10.53 +- 12.06
+Accel. Shift. Trunc. En-Norm Augmentation (Order 2): Energy norm: 481.4 +- 456.4
+Accel. Shift. Trunc. En-Norm Augmentation (Order 2): Energy norm (Relative): 20.49 +- 19.42
+
+Accel. Shift. Trunc. En-Norm Augmentation (Order 4): L2 norm: 827.4 +- 939.6
+Accel. Shift. Trunc. En-Norm Augmentation (Order 4): L2 norm (Relative): 9.195 +- 10.44
+Accel. Shift. Trunc. En-Norm Augmentation (Order 4): Energy norm: 768.5 +- 940.9
+Accel. Shift. Trunc. En-Norm Augmentation (Order 4): Energy norm (Relative): 31.83 +- 38.97
+
+Accel. Shift. Trunc. En-Norm Augmentation (Order 6): L2 norm: 130 +- 26.11
+Accel. Shift. Trunc. En-Norm Augmentation (Order 6): L2 norm (Relative): 1.543 +- 0.3099
+Accel. Shift. Trunc. En-Norm Augmentation (Order 6): Energy norm: 82.15 +- 21.55
+Accel. Shift. Trunc. En-Norm Augmentation (Order 6): Energy norm (Relative): 3.481 +- 0.9132
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% dgnGraphEdgeDrop
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Naive: L2 norm: 203.9 +- 0.1402
+Naive: L2 norm (Relative): 7.114 +- 0.004892
+Naive: Energy norm: 458.6 +- 0.4706
+Naive: Energy norm (Relative): 24.19 +- 0.02482
+
+Augmentation: L2 norm: 163.1 +- 1.441
+Augmentation: L2 norm (Relative): 5.665 +- 0.05005
+Augmentation: Energy norm: 368.5 +- 4.444
+Augmentation: Energy norm (Relative): 19.41 +- 0.2341
+
+Energy-Norm Augmentation: L2 norm: 27.24 +- 0.8116
+Energy-Norm Augmentation: L2 norm (Relative): 0.9343 +- 0.02784
+Energy-Norm Augmentation: Energy norm: 16.18 +- 0.2279
+Energy-Norm Augmentation: Energy norm (Relative): 0.8475 +- 0.01194
+
+Trunc. En-Norm Augmentation (Order 2): L2 norm: 139.3 +- 2.104
+Trunc. En-Norm Augmentation (Order 2): L2 norm (Relative): 4.754 +- 0.07177
+Trunc. En-Norm Augmentation (Order 2): Energy norm: 317.4 +- 4.968
+Trunc. En-Norm Augmentation (Order 2): Energy norm (Relative): 16.66 +- 0.2607
+
+Trunc. En-Norm Augmentation (Order 4): L2 norm: 45.68 +- 0.4024
+Trunc. En-Norm Augmentation (Order 4): L2 norm (Relative): 1.608 +- 0.01416
+Trunc. En-Norm Augmentation (Order 4): Energy norm: 107.1 +- 1.112
+Trunc. En-Norm Augmentation (Order 4): Energy norm (Relative): 5.687 +- 0.05906
+
+Trunc. En-Norm Augmentation (Order 6): L2 norm: 32.29 +- 0.4354
+Trunc. En-Norm Augmentation (Order 6): L2 norm (Relative): 1.117 +- 0.01507
+Trunc. En-Norm Augmentation (Order 6): Energy norm: 70.05 +- 0.7044
+Trunc. En-Norm Augmentation (Order 6): Energy norm (Relative): 3.692 +- 0.03712
+
+Trunc. En-Norm Augmentation (Order 2, Hard Window): L2 norm: 88.22 +- 1.767
+Trunc. En-Norm Augmentation (Order 2, Hard Window): L2 norm (Relative): 3.036 +- 0.06082
+Trunc. En-Norm Augmentation (Order 2, Hard Window): Energy norm: 204.2 +- 4.351
+Trunc. En-Norm Augmentation (Order 2, Hard Window): Energy norm (Relative): 10.66 +- 0.2272
+
+Trunc. En-Norm Augmentation (Order 4, Hard Window): L2 norm: 37.25 +- 0.3823
+Trunc. En-Norm Augmentation (Order 4, Hard Window): L2 norm (Relative): 1.304 +- 0.01339
+Trunc. En-Norm Augmentation (Order 4, Hard Window): Energy norm: 84.56 +- 0.8836
+Trunc. En-Norm Augmentation (Order 4, Hard Window): Energy norm (Relative): 4.472 +- 0.04673
+
+Accel. Shift. Trunc. En-Norm Augmentation (Order 2): L2 norm: 85.65 +- 1.828
+Accel. Shift. Trunc. En-Norm Augmentation (Order 2): L2 norm (Relative): 2.998 +- 0.06399
+Accel. Shift. Trunc. En-Norm Augmentation (Order 2): Energy norm: 201 +- 4.732
+Accel. Shift. Trunc. En-Norm Augmentation (Order 2): Energy norm (Relative): 10.55 +- 0.2484
+
+Accel. Shift. Trunc. En-Norm Augmentation (Order 4): L2 norm: 37.01 +- 0.4087
+Accel. Shift. Trunc. En-Norm Augmentation (Order 4): L2 norm (Relative): 1.296 +- 0.01431
+Accel. Shift. Trunc. En-Norm Augmentation (Order 4): Energy norm: 84.34 +- 0.9533
+Accel. Shift. Trunc. En-Norm Augmentation (Order 4): Energy norm (Relative): 4.439 +- 0.05018
+
+Accel. Shift. Trunc. En-Norm Augmentation (Order 6): L2 norm: 28.54 +- 0.5399
+Accel. Shift. Trunc. En-Norm Augmentation (Order 6): L2 norm (Relative): 1.018 +- 0.01926
+Accel. Shift. Trunc. En-Norm Augmentation (Order 6): Energy norm: 58.63 +- 0.7151
+Accel. Shift. Trunc. En-Norm Augmentation (Order 6): Energy norm (Relative): 3.129 +- 0.03817
+

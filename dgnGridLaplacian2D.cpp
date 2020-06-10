@@ -3,19 +3,13 @@
 
 using namespace aug;
 
-void formLaplacian2D(const Eigen::MatrixXd& a, Eigen::SparseMatrix<double>* output, const double h) {
-    int n = a.cols();
-    int m = a.rows();
+void formLaplacian2D(const Eigen::MatrixXd& aHorizontal,
+        const Eigen::MatrixXd& aVertical,
+        Eigen::SparseMatrix<double>* output,
+        const double h) {
+    int n = aVertical.cols();
+    int m = aHorizontal.rows();
     double h_sqrd = h * h;
-
-    Eigen::MatrixXd horizontalEdgeWeights = (a.block(1, 0, m - 2, n - 1) +
-            a.block(1, 1, m - 2, n - 1)) * 0.5;
-    Eigen::MatrixXd verticalEdgeWeights = (a.block(0, 1, m - 1, n - 2) +
-            a.block(1, 1, m - 1, n - 2)) * 0.5;
-
-    // Cut off the edges of the grid
-    n = n - 2;
-    m = m - 2;
 
     auto getVertId = [n, m](const int x, const int y) {
         if (x >= 0 && x < n && y >= 0 && y < m)
@@ -30,10 +24,10 @@ void formLaplacian2D(const Eigen::MatrixXd& a, Eigen::SparseMatrix<double>* outp
 
     for (int x = 0; x < n; ++x) {
         for (int y = 0; y < m; ++y) {
-            auto left_weight = horizontalEdgeWeights(y, x) / h_sqrd;
-            auto right_weight = horizontalEdgeWeights(y, x + 1) / h_sqrd;
-            auto up_weight = verticalEdgeWeights(y, x) / h_sqrd;
-            auto down_weight = verticalEdgeWeights(y + 1, x) / h_sqrd;
+            auto left_weight = aHorizontal(y, x) / h_sqrd;
+            auto right_weight = aHorizontal(y, x + 1) / h_sqrd;
+            auto up_weight = aVertical(y, x) / h_sqrd;
+            auto down_weight = aVertical(y + 1, x) / h_sqrd;
             auto current_id = getVertId(x, y);
             auto left_id = getVertId(x - 1, y);
             auto right_id = getVertId(x + 1, y);
@@ -67,16 +61,20 @@ void perturbBackground2D(const Eigen::MatrixXd& a, const double std_dev, Eigen::
     size_t n = a.cols();
     size_t m = a.rows();
     Eigen::MatrixXd rnd = Eigen::MatrixXd::Random(a.rows(), a.cols());
-    for (size_t i = 0; i < n; ++i)
-        for (size_t j = 0; j < m; ++j)
-            rnd(i, j) = (rnd(i, j) < 0.0 ? -1.0 : 1.0);
+    for (size_t j = 0; j < m; ++j)
+        for (size_t i = 0; i < n; ++i)
+            rnd(j, i) = (rnd(j, i) < 0.0 ? -1.0 : 1.0);
 
     Eigen::MatrixXd tmp = std_dev * rnd.array() + 1.0;
     *output = a.cwiseProduct(tmp);
 }
 
+// For an n x n grid
 struct GridLaplacian2DParameters {
-    Eigen::MatrixXd trueA;
+    // Should be n x (n + 1), sampled between grid points
+    Eigen::MatrixXd trueAHorizontal;
+    // Should be (n + 1) x n, sampled between grid points
+    Eigen::MatrixXd trueAVertical;
 };
 struct GridLaplacian2DHyperparameters {
     double stdDev;
@@ -88,15 +86,16 @@ typedef ProblemDefinition<GridLaplacian2DParameters, GridLaplacian2DHyperparamet
 class GridLaplacian2DDistribution : public DistributionBase {
 public:
     void drawParameters(GridLaplacian2DParameters* output) const override {
-        perturbBackground2D(parameters.trueA, hyperparameters.stdDev, &output->trueA);
+        perturbBackground2D(parameters.trueAHorizontal, hyperparameters.stdDev, &output->trueAHorizontal);
+        perturbBackground2D(parameters.trueAVertical, hyperparameters.stdDev, &output->trueAVertical);
     }
     std::shared_ptr<IInvertibleMatrixOperator> convert(const GridLaplacian2DParameters& params) const override {
         Eigen::SparseMatrix<double> matrix;
-        formLaplacian2D(params.trueA, &matrix, hyperparameters.h);
+        formLaplacian2D(params.trueAHorizontal, params.trueAVertical, &matrix, hyperparameters.h);
         return std::shared_ptr<IInvertibleMatrixOperator>(new DefaultSparseMatrixSample(matrix));
     }
     size_t getDimension() const override {
-        return parameters.trueA.size() - 1u;
+        return parameters.trueAHorizontal.rows();
     }
 
     GridLaplacian2DDistribution(GridLaplacian2DParameters& parameters, GridLaplacian2DHyperparameters& hyperparameters) :
@@ -111,8 +110,10 @@ typedef ProblemRun<GridLaplacian2DParameters, GridLaplacian2DHyperparameters>
 void dgnGridLaplacian2D() {
     size_t n = 64;
     double std_dev = 0.5;
-    Eigen::MatrixXd true_a = Eigen::MatrixXd::Ones(n + 2, n + 2);
     double h = 1.0 / (n + 1.0);
+
+    Eigen::MatrixXd true_a_horiz = Eigen::MatrixXd::Ones(n, n + 1);
+    Eigen::MatrixXd true_a_vert = Eigen::MatrixXd::Ones(n + 1, n);
     Eigen::VectorXd eqSpaced = Eigen::VectorXd::LinSpaced(n, 1, n) * h;
     Eigen::VectorXd oneVec = Eigen::VectorXd::Ones(n);
     Eigen::MatrixXd xs_mat = (oneVec * eqSpaced.transpose()).transpose();
@@ -125,7 +126,7 @@ void dgnGridLaplacian2D() {
     };
     auto bDistribution = std::shared_ptr<IVectorDistribution>(new VectorDistributionFromLambda(bDistribution_func));
 
-    auto params = GridLaplacian2DParameters{true_a};
+    auto params = GridLaplacian2DParameters{true_a_horiz, true_a_vert};
     auto hyperparams = GridLaplacian2DHyperparameters{std_dev, h};
     auto true_mat_dist = std::shared_ptr<DistributionBase>(new GridLaplacian2DDistribution(params, hyperparams));
     auto problem_def = std::shared_ptr<ProblemDefType>(new ProblemDefType(true_mat_dist));
