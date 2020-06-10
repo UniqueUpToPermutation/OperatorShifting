@@ -32,6 +32,32 @@ namespace aug {
                 parent->bDistribution.get(), this->op_R.get(), this->op_B.get(), output);
         }
     };
+
+    template<typename ParameterType, typename HyperparameterType>
+    class AuxEnergyAugmentationRun : public ProblemRun<ParameterType, HyperparameterType> {
+    public:
+        typedef MatrixParameterDistribution<ParameterType, HyperparameterType> DistributionType;
+        typedef ProblemDefinition<ParameterType, HyperparameterType> ParentType;
+
+        std::shared_ptr<IMatrixOperator> op_C;
+        ParentType* parent;
+
+        explicit AuxEnergyAugmentationRun(ParentType *parent, std::shared_ptr<IMatrixOperator> &op_C) :
+                ProblemRun<ParameterType, HyperparameterType>(parent, "Aux Energy-Norm Augmentation"),
+                op_C(op_C), parent(parent) {}
+
+        explicit AuxEnergyAugmentationRun(ParentType *parent) :
+                ProblemRun<ParameterType, HyperparameterType>(parent, "Aux Energy-Norm Augmentation"),
+                op_C(nullptr), parent(parent) {}
+
+        void subRun(DistributionType &bootstrapDistribution, Eigen::VectorXd &rhs, Eigen::VectorXd *output) const override {
+            auto Ahat = bootstrapDistribution.convert(bootstrapDistribution.parameters);
+            auto Mhat = bootstrapDistribution.convertAuxiliary(bootstrapDistribution.parameters);
+
+            auxEnAug(this->samplesPerSubRun, this->samplesPerSystem, rhs, Ahat.get(), Mhat.get(), Ahat.get(),
+                    &bootstrapDistribution, parent->bDistribution.get(), this->op_C.get(), output);
+        }
+    };
 }
 
 #endif //OPERATORAUGMENTATION_AUXDIAGNOSTICS_H

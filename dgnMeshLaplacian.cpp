@@ -73,7 +73,7 @@ void dgnMeshLaplacian() {
 
     double scaling = (geo->getBoundingBox().upper - geo->getBoundingBox().lower).norm();
 
-    double stddev = 0.005;
+    double stddev = 0.0025;
     double gamma = 0.1; // Make system invertible by shifting
     stddev *= scaling;
 
@@ -95,6 +95,13 @@ void dgnMeshLaplacian() {
     // Op Augmentation
     run = std::shared_ptr<ProblemRunType>(
             new AuxAugmentationRun<MeshLaplacianParameters, MeshLaplacianHyperparameters>(problemDef.get()));
+    run->numberSubRuns = 100;
+    run->samplesPerSubRun = 100;
+    diagnostics.addRun(run);
+
+    // Op En Augmentation
+    run = std::shared_ptr<ProblemRunType>(
+            new AuxEnergyAugmentationRun<MeshLaplacianParameters, MeshLaplacianHyperparameters>(problemDef.get()));
     run->numberSubRuns = 100;
     run->samplesPerSubRun = 100;
     diagnostics.addRun(run);
