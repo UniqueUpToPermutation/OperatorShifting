@@ -91,8 +91,9 @@ void perturbBackground2D(const Eigen::MatrixXd& a, const PerturbType perturbType
             auto beta = 1.0 / (std_dev * std_dev);
             std::gamma_distribution<double> gammaDist(alpha, beta);
             *output = Eigen::VectorXd::Zero(m, n);
-            for (int i = 0; i < n; ++i)
-                (*output)(i) = a(i) * gammaDist(dgnGridLap2DRnd);
+            for (size_t j = 0; j < m; ++j)
+                for (size_t i = 0; i < n; ++i)
+                (*output)(j, i) = a(j, i) * gammaDist(dgnGridLap2DRnd);
             break;
         }
     }
