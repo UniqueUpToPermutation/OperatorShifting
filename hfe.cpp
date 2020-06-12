@@ -12,7 +12,7 @@ namespace hfe {
 	{
 		auto geo = new Geometry();
 
-		ifstream f = ifstream(path, ios::in | ios::binary);
+		ifstream f(path, ios::in | ios::binary);
 
 		unsigned char hasPositions;
 		unsigned char hasUvs;
@@ -224,7 +224,7 @@ namespace hfe {
 
 	void Geometry::saveJson(const std::string & path)
 	{
-		ofstream f = ofstream(path);
+		ofstream f(path);
 		json j;
 
 		if (hasPositions()) {
@@ -314,7 +314,7 @@ namespace hfe {
 	}
 
 	Geometry* loadJson(const std::string& filename) {
-		ifstream f = ifstream(filename);
+		ifstream f(filename);
 
         if (!f.is_open())
             throw "Error: bad path!";
