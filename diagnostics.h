@@ -21,17 +21,54 @@
 #define DEFAULT_SAMPLES_PER_SUB_RUN 10u
 #define DEFAULT_SAMPLES_PER_SYSTEM 1u
 
+#define ORDER_NOT_APPLICABLE -1
+
 #define STRING_PADDING "                                                                                       "
 
 namespace aug {
+
+    class IVectorNorm
+    {
+    public:
+        virtual std::string getName() const = 0;
+        virtual std::string getAbbreviatedName() const = 0;
+        virtual double operator()(Eigen::VectorXd& x) const = 0;
+    };
+
+    class L2Norm : public IVectorNorm
+    {
+    public:
+        std::string getName() const override { return "Squared L2 Norm"; }
+        std::string getAbbreviatedName() const override { return "MSE"; }
+        double operator()(Eigen::VectorXd& x) const override { return x.dot(x); }
+    };
+
+    class EnergyNorm : public IVectorNorm
+    {
+    private:
+        IMatrixOperator* normMatrix;
+    public:
+        std::string getName() const override { return "Squared Energy Norm"; }
+        std::string getAbbreviatedName() const override { return "EMSE"; }
+        double operator()(Eigen::VectorXd& x) const override {
+            Eigen::VectorXd result;
+            normMatrix->apply(x, &result);
+            return x.dot(result);
+        }
+
+        EnergyNorm(IMatrixOperator* norm) : normMatrix(norm) { }
+    };
+
+    std::shared_ptr<IVectorNorm> makeL2Norm();
+    std::shared_ptr<IVectorNorm> makeEnergyNorm(IMatrixOperator* norm);
+
     void ProgressBar(double percentage, size_t numCharacters, std::string* output);
 
     enum TruncationWindowType {
+        TRUNCATION_WINDOW_NOT_APPLICABLE = -1,
         TRUNCATION_WINDOW_SOFT = 0,
         TRUNCATION_WINDOW_HARD = 1
     };
-
-    typedef std::function<double(Eigen::VectorXd &)> vecnorm;
 
     template<typename ParameterType, typename HyperparameterType>
     class MatrixParameterDistribution : public IMatrixDistribution {
@@ -93,8 +130,8 @@ namespace aug {
         std::shared_ptr<IVectorDistribution> bDistribution;
         std::shared_ptr<IInvertibleMatrixOperator> trueMatrix;
         std::shared_ptr<IMatrixOperator> trueAuxMatrix;
-        vecnorm energyNorm;
-        vecnorm l2Norm;
+        std::shared_ptr<IVectorNorm> energyNorm;
+        std::shared_ptr<IVectorNorm> l2Norm;
 
         explicit ProblemDefinition(std::shared_ptr<DistributionType> &trueDistribution) :
                 trueDistribution(trueDistribution) {
@@ -108,14 +145,8 @@ namespace aug {
             trueAuxMatrix = trueDistribution->convertAuxiliary(trueDistribution->parameters);
 
             // Define norms
-            energyNorm = [this](Eigen::VectorXd &x) {
-                Eigen::VectorXd result;
-                this->trueMatrix->apply(x, &result);
-                return sqrt(x.dot(result));
-            };
-            l2Norm = [](Eigen::VectorXd &x) {
-                return sqrt(x.dot(x));
-            };
+            energyNorm = makeEnergyNorm(trueMatrix.get());
+            l2Norm = makeL2Norm();
         }
     };
 
@@ -131,15 +162,16 @@ namespace aug {
         size_t samplesPerSubRun;
         size_t samplesPerSystem;
         std::string name;
+        std::string abrevName;
         std::vector<double> errors;
-        std::vector<vecnorm> norms;
-        std::vector<std::string> normNames;
+        std::vector<IVectorNorm*> norms;
 
-        explicit ProblemRun(ParentType *parent, const std::string &name) :
+        explicit ProblemRun(ParentType *parent, const std::string &name, const std::string &abreviatedName) :
                 numberSubRuns(DEFAULT_NUMBER_SUB_RUNS),
                 samplesPerSubRun(DEFAULT_SAMPLES_PER_SUB_RUN),
                 samplesPerSystem(DEFAULT_SAMPLES_PER_SYSTEM) {
             this->name = name;
+            this->abrevName = abreviatedName;
 
             qDistribution = parent->bDistribution;
             std::function<void(Eigen::VectorXd *)> sampler = [parent](Eigen::VectorXd *output) {
@@ -148,14 +180,20 @@ namespace aug {
             quDistribution = std::shared_ptr<IVectorPairDistribution>(
                     new IdenticalVectorDistributionFromLambda(sampler));
 
-            norms.push_back(parent->l2Norm);
-            norms.push_back(parent->energyNorm);
-            normNames.emplace_back("L2 norm");
-            normNames.emplace_back("Energy norm");
+            norms.push_back(parent->l2Norm.get());
+            norms.push_back(parent->energyNorm.get());
         }
 
-        virtual void
-        subRun(DistributionType &bootstrapDistribution, Eigen::VectorXd &rhs, Eigen::VectorXd *output) const = 0;
+        explicit ProblemRun(ParentType *parent, const std::string &name) :
+            ProblemRun(parent, name, name) { }
+
+        virtual void subRun(DistributionType &bootstrapDistribution, Eigen::VectorXd &rhs,
+                Eigen::VectorXd *output) const = 0;
+
+        virtual int getOrder() const { return ORDER_NOT_APPLICABLE; }
+        virtual TruncationWindowType getWindowType() const { return TRUNCATION_WINDOW_NOT_APPLICABLE; }
+        virtual std::string getAbbreviatedName() const { return abrevName; }
+        virtual std::string getName() const { return name; }
     };
 
     template<typename ParameterType, typename HyperparameterType>
@@ -167,8 +205,8 @@ namespace aug {
         explicit NaiveRun(ParentType *parent) :
                 ProblemRun<ParameterType, HyperparameterType>(parent, "Naive") {}
 
-        void
-        subRun(DistributionType &bootstrapDistribution, Eigen::VectorXd &rhs, Eigen::VectorXd *output) const override {
+        void subRun(DistributionType &bootstrapDistribution, Eigen::VectorXd &rhs,
+                Eigen::VectorXd *output) const override {
             auto sampled_mat = bootstrapDistribution.convert(bootstrapDistribution.parameters);
             auto aux_mat = bootstrapDistribution.convertAuxiliary(bootstrapDistribution.parameters);
 
@@ -191,15 +229,15 @@ namespace aug {
 
         explicit AugmentationRun(ParentType *parent, std::shared_ptr<IMatrixOperator> &op_B,
                                  std::shared_ptr<IMatrixOperator> &op_R) :
-                ProblemRun<ParameterType, HyperparameterType>(parent, "Augmentation"),
+                ProblemRun<ParameterType, HyperparameterType>(parent, "Augmentation", "AG"),
                 op_B(op_B), op_R(op_R) {}
 
         explicit AugmentationRun(ParentType *parent) :
-                ProblemRun<ParameterType, HyperparameterType>(parent, "Augmentation"),
+                ProblemRun<ParameterType, HyperparameterType>(parent, "Augmentation", "AG"),
                 op_B(nullptr), op_R(nullptr) {}
 
-        void
-        subRun(DistributionType &bootstrapDistribution, Eigen::VectorXd &rhs, Eigen::VectorXd *output) const override {
+        void subRun(DistributionType &bootstrapDistribution, Eigen::VectorXd &rhs,
+                Eigen::VectorXd *output) const override {
             auto sampled_mat = bootstrapDistribution.convert(bootstrapDistribution.parameters);
 
             aug(this->samplesPerSubRun, this->samplesPerSystem, rhs, sampled_mat.get(), &bootstrapDistribution,
@@ -216,15 +254,15 @@ namespace aug {
         std::shared_ptr<IMatrixOperator> op_C;
 
         explicit EnergyAugmentationRun(ParentType *parent, std::shared_ptr<IMatrixOperator> &op_C) :
-                ProblemRun<ParameterType, HyperparameterType>(parent, "Energy-Norm Augmentation"),
+                ProblemRun<ParameterType, HyperparameterType>(parent, "Energy-Norm Augmentation", "EAG"),
                 op_C(op_C) {}
 
         explicit EnergyAugmentationRun(ParentType *parent) :
-                ProblemRun<ParameterType, HyperparameterType>(parent, "Energy-Norm Augmentation"),
+                ProblemRun<ParameterType, HyperparameterType>(parent, "Energy-Norm Augmentation", "EAG"),
                 op_C(nullptr) {}
 
-        void
-        subRun(DistributionType &bootstrapDistribution, Eigen::VectorXd &rhs, Eigen::VectorXd *output) const override {
+        void subRun(DistributionType &bootstrapDistribution, Eigen::VectorXd &rhs,
+                Eigen::VectorXd *output) const override {
             auto sampled_mat = bootstrapDistribution.convert(bootstrapDistribution.parameters);
 
             enAug(this->samplesPerSubRun, this->samplesPerSystem, rhs, sampled_mat.get(), &bootstrapDistribution,
@@ -242,7 +280,7 @@ namespace aug {
         TruncationWindowType windowType;
         size_t order;
 
-        std::string GetName() const {
+        std::string buildName() const {
             std::ostringstream os;
             os << "Trunc. En-Norm Augmentation (Order " << order;
             if (windowType == TRUNCATION_WINDOW_HARD)
@@ -251,27 +289,35 @@ namespace aug {
             return os.str();
         }
 
+        TruncationWindowType getWindowType() const override {
+            return windowType;
+        }
+
+        int getOrder() const override {
+            return order;
+        }
+
         explicit TruncatedEnergyAugmentationRun(ParentType *parent, size_t order,
                                                 TruncationWindowType windowType, std::shared_ptr<IMatrixOperator> &op_C)
                 :
-                ProblemRun<ParameterType, HyperparameterType>(parent, ""),
+                ProblemRun<ParameterType, HyperparameterType>(parent, "", "T-EAG"),
                 order(order),
                 windowType(windowType),
                 op_C(op_C) {
-            this->name = GetName();
+            this->name = buildName();
         }
 
         explicit TruncatedEnergyAugmentationRun(ParentType *parent, size_t order = DEFAULT_TRUNCATION_ORDER,
                                                 TruncationWindowType windowType = TRUNCATION_WINDOW_SOFT) :
-                ProblemRun<ParameterType, HyperparameterType>(parent, ""),
+                ProblemRun<ParameterType, HyperparameterType>(parent, "", "T-EAG"),
                 order(order),
                 windowType(windowType),
                 op_C(nullptr) {
-            this->name = GetName();
+            this->name = buildName();
         }
 
-        void
-        subRun(DistributionType &bootstrapDistribution, Eigen::VectorXd &rhs, Eigen::VectorXd *output) const override {
+        void subRun(DistributionType &bootstrapDistribution, Eigen::VectorXd &rhs,
+                Eigen::VectorXd *output) const override {
             auto sampled_mat = bootstrapDistribution.convert(bootstrapDistribution.parameters);
 
             std::function<double(int, int)> numerator_window;
@@ -285,6 +331,10 @@ namespace aug {
                 case TRUNCATION_WINDOW_HARD:
                     numerator_window = &hardWindowFuncNumerator;
                     denominator_window = &hardWindowFuncDenominator;
+                    break;
+                default:
+                    numerator_window = &softWindowFuncNumerator;
+                    denominator_window = &softWindowFuncDenominator;
                     break;
             }
 
@@ -305,7 +355,7 @@ namespace aug {
         double eps;
         int order;
 
-        std::string GetName() const {
+        std::string buildName() const {
             std::ostringstream os;
             os << "Accel. Shift. Trunc. En-Norm Augmentation (Order " << order;
             if (windowType == TRUNCATION_WINDOW_HARD)
@@ -314,31 +364,39 @@ namespace aug {
             return os.str();
         }
 
+        TruncationWindowType getWindowType() const override {
+            return windowType;
+        }
+
+        int getOrder() const override {
+            return order;
+        }
+
         explicit AccelShiftTruncatedEnergyAugmentationRun(ParentType *parent, int order,
                                                           TruncationWindowType windowType,
                                                           double eps,
                                                           std::shared_ptr<IMatrixOperator> &op_C) :
-                ProblemRun<ParameterType, HyperparameterType>(parent, ""),
+                ProblemRun<ParameterType, HyperparameterType>(parent, "", "AST-EAG"),
                 order(order),
                 windowType(windowType),
                 eps(eps),
                 op_C(op_C) {
-            this->name = GetName();
+            this->name = buildName();
         }
 
         explicit AccelShiftTruncatedEnergyAugmentationRun(ParentType *parent, int order = DEFAULT_TRUNCATION_ORDER,
                                                           TruncationWindowType windowType = DEFAULT_TRUNCATION_WINDOW,
                                                           double eps = DEFAULT_POWER_METHOD_EPS) :
-                ProblemRun<ParameterType, HyperparameterType>(parent, ""),
+                ProblemRun<ParameterType, HyperparameterType>(parent, "", "AST-EAG"),
                 order(order),
                 windowType(windowType),
                 eps(eps),
                 op_C(nullptr) {
-            this->name = GetName();
+            this->name = buildName();
         }
 
-        void
-        subRun(DistributionType &bootstrapDistribution, Eigen::VectorXd &rhs, Eigen::VectorXd *output) const override {
+        void subRun(DistributionType &bootstrapDistribution, Eigen::VectorXd &rhs,
+                Eigen::VectorXd *output) const override {
             auto sampled_mat = bootstrapDistribution.convert(bootstrapDistribution.parameters);
 
             std::function<double(int, int, double)> numerator_window;
@@ -353,6 +411,10 @@ namespace aug {
                     numerator_window = &hardShiftedWindowFuncNumerator;
                     denominator_window = &hardShiftedWindowFuncDenominator;
                     break;
+                default:
+                    numerator_window = &softShiftedWindowFuncNumerator;
+                    denominator_window = &softShiftedWindowFuncDenominator;
+                    break;
             }
 
             enAugAccelShiftTrunc(this->samplesPerSubRun, this->samplesPerSystem, rhs, order, eps, sampled_mat.get(),
@@ -366,7 +428,7 @@ namespace aug {
         typedef ProblemRun<ParameterType, HyperparameterType> ProblemRunType;
 
         std::string name;
-        std::vector<std::string> normNames;
+        ProblemRunType* run;
         Eigen::MatrixXd rawErrData;
         Eigen::VectorXd meanErrs;
         Eigen::VectorXd stdErrs;
@@ -376,8 +438,8 @@ namespace aug {
 
         explicit ProblemRunResults(ProblemRunType *run, Eigen::MatrixXd &rawErrData, Eigen::MatrixXd &solutionNorms)
                 : name(run->name),
-                  rawErrData(rawErrData) {
-            normNames = run->normNames;
+                  rawErrData(rawErrData),
+                  run(run) {
 
             meanErrs = rawErrData.rowwise().mean();
             Eigen::MatrixXd meansExpanded = meanErrs * Eigen::VectorXd::Ones(rawErrData.cols()).transpose();
@@ -388,13 +450,43 @@ namespace aug {
             relativeStdErrs = stdErrs.cwiseQuotient(meanSolNorms);
         }
 
-        void print() {
-            for (int i = 0; i < normNames.size(); ++i) {
-                std::cout << name << ": " << normNames[i] << ": " << std::setprecision(4) <<
+        void print() const {
+            for (int i = 0; i < run->norms.size(); ++i) {
+                std::cout << name << ": " << run->norms[i]->getName() << ": " << std::setprecision(4) <<
                           meanErrs[i] << " +- " << std::setprecision(4) << 2.0 * stdErrs[i] << std::endl;
-                std::cout << name << ": " << normNames[i] << " (Relative): " << std::setprecision(4) <<
+                std::cout << name << ": " << run->norms[i]->getName() << " (Relative): " << std::setprecision(4) <<
                           relativeErrs[i] << " +- " << std::setprecision(4) << 2.0 * relativeStdErrs[i] << std::endl;
             }
+        }
+
+        void printLatexTableRow() const {
+            std::cout << "\\textbf{" << run->getAbbreviatedName() << "} & ";
+            if (run->getOrder() == ORDER_NOT_APPLICABLE)
+                std::cout << "--- & ";
+            else
+                std::cout << run->getOrder() << " & ";
+
+            auto winType = run->getWindowType();
+            if (run->getAbbreviatedName() == "AST-EAG")
+                winType = TRUNCATION_WINDOW_NOT_APPLICABLE;
+
+            switch (winType) {
+                case TRUNCATION_WINDOW_SOFT:
+                    std::cout << "Soft ";
+                    break;
+                case TRUNCATION_WINDOW_HARD:
+                    std::cout << "Hard ";
+                    break;
+                default:
+                    std::cout << "--- ";
+                    break;
+            }
+
+            for (int i = 0; i < run->norms.size(); ++i) {
+                std::cout << "& $" << std::setprecision(3) << relativeErrs[i] * 100.0 <<
+                "\\%$ & $\\pm " << std::setprecision(3) << 2.0 * relativeStdErrs[i] * 100.0 << "\\%$ ";
+            }
+            std::cout << "\\\\" << std::endl;
         }
     };
 
@@ -493,10 +585,10 @@ namespace aug {
                             run_ptr->subRun(bootstrap_distribution, b, &augResult);
 
                             for (int i_norm = 0; i_norm < run_ptr->norms.size(); ++i_norm) {
-                                vecnorm current_norm = run_ptr->norms[i_norm];
+                                IVectorNorm* current_norm = run_ptr->norms[i_norm];
                                 Eigen::VectorXd diff = augResult - trueSolution;
-                                thread_errs(i_norm, index) = current_norm(diff);
-                                thread_sol_norms(i_norm, index) = current_norm(trueSolution);
+                                thread_errs(i_norm, index) = (*current_norm)(diff);
+                                thread_sol_norms(i_norm, index) = (*current_norm)(trueSolution);
                             }
 
                             // Thread 0 will output progress messages to cout
@@ -548,11 +640,39 @@ namespace aug {
             }
         }
 
-        void printResults() {
+        void printResults() const {
             for (auto &result : results) {
                 std::cout << std::endl;
                 result->print();
             }
+        }
+
+        void printLatexTable() const {
+            std::cout << std::endl;
+            std::cout << "\\begin{tabular}{r|cc";
+            for (auto& norm : problemRuns[0]->norms)
+                std::cout << "ll";
+            std::cout << "}" << std::endl;
+
+            std::cout << "Method & Order & Window ";
+
+            for (auto& norm : problemRuns[0]->norms) {
+                std::cout << "& Rel. " << norm->getAbbreviatedName() << " & $\\pm 2\\sigma$ ";
+            }
+            std::cout << "\\\\" << std::endl;
+            std::cout << "\\hline \\hline " << std::endl;
+
+            ResultsType* last = nullptr;
+            for (auto& result : results) {
+                if (last != nullptr && (last->run->getAbbreviatedName() != result->run->getAbbreviatedName() ||
+                    last->run->getWindowType() != result->run->getWindowType()))
+                    std::cout << "\\hline" << std::endl;
+
+                result->printLatexTableRow();
+                last = result.get();
+            }
+
+            std::cout << "\\end{tabular}" << std::endl;
         }
     };
 }

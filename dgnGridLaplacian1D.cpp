@@ -163,4 +163,5 @@ void dgnGridLaplacian1D() {
 
     diagnostics.run(4);
     diagnostics.printResults();
+    diagnostics.printLatexTable();
 }

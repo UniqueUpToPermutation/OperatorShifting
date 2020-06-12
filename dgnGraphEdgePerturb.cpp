@@ -12,8 +12,8 @@ using namespace lemon;
 std::default_random_engine dgnEdgePeturbRnd(std::chrono::system_clock::now().time_since_epoch().count());
 
 void perturb(const ListGraph* graph, const ListGraph::EdgeMap<double>* base,
-        const double stddev,
-        ListGraph::EdgeMap<double>* output) {
+             const double stddev,
+             ListGraph::EdgeMap<double>* output) {
     auto alpha = stddev * stddev;
     auto beta = 1.0 / (stddev * stddev);
     std::gamma_distribution<double> gammaDist(alpha, beta);
@@ -25,129 +25,139 @@ void perturb(const ListGraph* graph, const ListGraph::EdgeMap<double>* base,
     }
 }
 
-struct GraphEdgeDropParameters {
+struct GraphEdgePerturbParameters {
     std::shared_ptr<ListGraph::EdgeMap<double>> weights;
 };
-struct GraphEdgeDropHyperparameters {
+struct GraphEdgePerturbHyperparameters {
     ListGraph* graph;
-    double p;
-    double gamma;
+    Eigen::SparseMatrix<double>* interiorExtractorLeft;
+    Eigen::SparseMatrix<double>* interiorExtractorRight;
+    double stddev;
 };
-typedef MatrixParameterDistribution<GraphEdgeDropParameters, GraphEdgeDropHyperparameters > DistributionBase;
-typedef ProblemDefinition<GraphEdgeDropParameters, GraphEdgeDropHyperparameters > ProblemDefType;
+typedef MatrixParameterDistribution<GraphEdgePerturbParameters, GraphEdgePerturbHyperparameters > DistributionBase;
+typedef ProblemDefinition<GraphEdgePerturbParameters, GraphEdgePerturbHyperparameters > ProblemDefType;
 
-class GraphEdgeDropDistribution : public DistributionBase {
+class GraphEdgePerturbDistribution : public DistributionBase {
 public:
-    void drawParameters(GraphEdgeDropParameters* output) const override {
+    void drawParameters(GraphEdgePerturbParameters* output) const override {
         auto newWeights = std::shared_ptr<ListGraph::EdgeMap<double>>(new ListGraph::EdgeMap<double>(*hyperparameters.graph));
-        perturb(hyperparameters.graph, parameters.weights.get(), hyperparameters.p, newWeights.get());
+        perturb(hyperparameters.graph, parameters.weights.get(), hyperparameters.stddev, newWeights.get());
         output->weights = newWeights;
     }
-    std::shared_ptr<IInvertibleMatrixOperator> convert(const GraphEdgeDropParameters& params) const override {
+    std::shared_ptr<IInvertibleMatrixOperator> convert(const GraphEdgePerturbParameters& params) const override {
         Eigen::SparseMatrix<double> matrix(getDimension(), getDimension());
         graphLaplacian(hyperparameters.graph, params.weights.get(), &matrix);
-        int dim = getDimension();
-        // Add stuff to the diagonal to better condition system
-        for (int i = 0; i < dim; ++i)
-            matrix.coeffRef(i, i) = matrix.coeff(i, i) + hyperparameters.gamma;
+        matrix = (*hyperparameters.interiorExtractorLeft) * matrix * (*hyperparameters.interiorExtractorRight);
         return std::shared_ptr<IInvertibleMatrixOperator>(new DefaultSparseMatrixSample(matrix));
     }
     size_t getDimension() const override {
-        return countNodes(*hyperparameters.graph);
+        return hyperparameters.interiorExtractorLeft->rows();
     }
-    GraphEdgeDropDistribution(GraphEdgeDropParameters& parameters, GraphEdgeDropHyperparameters& hyperparameters) :
+    GraphEdgePerturbDistribution(GraphEdgePerturbParameters& parameters, GraphEdgePerturbHyperparameters& hyperparameters) :
             DistributionBase(parameters, hyperparameters) {}
 };
 
-typedef Diagnostics<GraphEdgeDropParameters, GraphEdgeDropHyperparameters, GraphEdgeDropDistribution>
+typedef Diagnostics<GraphEdgePerturbParameters, GraphEdgePerturbHyperparameters, GraphEdgePerturbDistribution>
         DiagnosticsType;
-typedef ProblemRun<GraphEdgeDropParameters, GraphEdgeDropHyperparameters>
+typedef ProblemRun<GraphEdgePerturbParameters, GraphEdgePerturbHyperparameters>
         ProblemRunType;
 
-void dgnGraphEdgeDrop() {
+void dgnGraphEdgePerturb() {
 
-    double p = 0.1;
-    double gamma = 0.1;
+    double std_dev = 2.0;
     ListGraph graph;
     loadGraphUnweighted("Graphs/fb-pages-food/fb-pages-food.edges", &graph);
     std::shared_ptr<ListGraph::EdgeMap<double>> pWeights(new ListGraph::EdgeMap<double>(graph, 1.0));
-    GraphEdgeDropParameters params{pWeights};
+    GraphEdgePerturbParameters params{pWeights};
 
-    auto hyperparams = GraphEdgeDropHyperparameters{&graph, p, gamma};
-    auto true_mat_dist = std::shared_ptr<DistributionBase>(new GraphEdgeDropDistribution(params, hyperparams));
+    std::vector<int> boundary = {1, 60, 100, 127, 200}; // Arbitrarily selected nodes
+    std::vector<int> all;
+    int nodeCount = countNodes(graph);
+    all.reserve(nodeCount);
+    for (int i = 0; i < nodeCount; ++i)
+        all.emplace_back(i);
+    std::vector<int> interior;
+    std::set_difference(all.begin(), all.end(), boundary.begin(), boundary.end(),
+                        std::inserter(interior, interior.begin()));
+    Eigen::SparseMatrix<double> interiorExtractorLeft;
+    createSlicingMatrix(all.size(), interior, &interiorExtractorLeft);
+    Eigen::SparseMatrix<double> interiorExtractorRight = interiorExtractorLeft.transpose();
+
+    auto hyperparams = GraphEdgePerturbHyperparameters{&graph, &interiorExtractorLeft, &interiorExtractorRight, std_dev};
+    auto true_mat_dist = std::shared_ptr<DistributionBase>(new GraphEdgePerturbDistribution(params, hyperparams));
     auto problem_def = std::shared_ptr<ProblemDefType>(new ProblemDefType(true_mat_dist));
     auto diagnostics = DiagnosticsType(problem_def);
 
     // Naive run
     auto run = std::shared_ptr<ProblemRunType>(
-            new NaiveRun<GraphEdgeDropParameters, GraphEdgeDropHyperparameters>(problem_def.get()));
+            new NaiveRun<GraphEdgePerturbParameters, GraphEdgePerturbHyperparameters>(problem_def.get()));
     run->numberSubRuns = 10000;
     diagnostics.addRun(run);
 
     run = std::shared_ptr<ProblemRunType>(
-            new AugmentationRun<GraphEdgeDropParameters, GraphEdgeDropHyperparameters>(problem_def.get()));
+            new AugmentationRun<GraphEdgePerturbParameters, GraphEdgePerturbHyperparameters>(problem_def.get()));
+    run->numberSubRuns = 10000;
+    run->samplesPerSubRun = 100;
+    diagnostics.addRun(run);
+
+    run = std::shared_ptr<ProblemRunType>(
+            new EnergyAugmentationRun<GraphEdgePerturbParameters, GraphEdgePerturbHyperparameters>(problem_def.get()));
     run->numberSubRuns = 100;
     run->samplesPerSubRun = 100;
     diagnostics.addRun(run);
 
     run = std::shared_ptr<ProblemRunType>(
-            new EnergyAugmentationRun<GraphEdgeDropParameters, GraphEdgeDropHyperparameters>(problem_def.get()));
+            new TruncatedEnergyAugmentationRun<GraphEdgePerturbParameters,
+                    GraphEdgePerturbHyperparameters>(problem_def.get(), 2));
     run->numberSubRuns = 100;
     run->samplesPerSubRun = 100;
     diagnostics.addRun(run);
 
     run = std::shared_ptr<ProblemRunType>(
-            new TruncatedEnergyAugmentationRun<GraphEdgeDropParameters,
-                    GraphEdgeDropHyperparameters>(problem_def.get(), 2));
+            new TruncatedEnergyAugmentationRun<GraphEdgePerturbParameters,
+                    GraphEdgePerturbHyperparameters>(problem_def.get(), 4));
     run->numberSubRuns = 100;
     run->samplesPerSubRun = 100;
     diagnostics.addRun(run);
 
     run = std::shared_ptr<ProblemRunType>(
-            new TruncatedEnergyAugmentationRun<GraphEdgeDropParameters,
-                    GraphEdgeDropHyperparameters>(problem_def.get(), 4));
+            new TruncatedEnergyAugmentationRun<GraphEdgePerturbParameters,
+                    GraphEdgePerturbHyperparameters>(problem_def.get(), 6));
     run->numberSubRuns = 100;
     run->samplesPerSubRun = 100;
     diagnostics.addRun(run);
 
     run = std::shared_ptr<ProblemRunType>(
-            new TruncatedEnergyAugmentationRun<GraphEdgeDropParameters,
-                    GraphEdgeDropHyperparameters>(problem_def.get(), 6));
+            new TruncatedEnergyAugmentationRun<GraphEdgePerturbParameters,
+                    GraphEdgePerturbHyperparameters>(problem_def.get(), 2, TRUNCATION_WINDOW_HARD));
     run->numberSubRuns = 100;
     run->samplesPerSubRun = 100;
     diagnostics.addRun(run);
 
     run = std::shared_ptr<ProblemRunType>(
-            new TruncatedEnergyAugmentationRun<GraphEdgeDropParameters,
-                    GraphEdgeDropHyperparameters>(problem_def.get(), 2, TRUNCATION_WINDOW_HARD));
+            new TruncatedEnergyAugmentationRun<GraphEdgePerturbParameters,
+                    GraphEdgePerturbHyperparameters>(problem_def.get(), 4, TRUNCATION_WINDOW_HARD));
     run->numberSubRuns = 100;
     run->samplesPerSubRun = 100;
     diagnostics.addRun(run);
 
     run = std::shared_ptr<ProblemRunType>(
-            new TruncatedEnergyAugmentationRun<GraphEdgeDropParameters,
-                    GraphEdgeDropHyperparameters>(problem_def.get(), 4, TRUNCATION_WINDOW_HARD));
+            new AccelShiftTruncatedEnergyAugmentationRun<GraphEdgePerturbParameters,
+                    GraphEdgePerturbHyperparameters>(problem_def.get(), 2));
     run->numberSubRuns = 100;
     run->samplesPerSubRun = 100;
     diagnostics.addRun(run);
 
     run = std::shared_ptr<ProblemRunType>(
-            new AccelShiftTruncatedEnergyAugmentationRun<GraphEdgeDropParameters,
-                    GraphEdgeDropHyperparameters>(problem_def.get(), 2));
+            new AccelShiftTruncatedEnergyAugmentationRun<GraphEdgePerturbParameters,
+                    GraphEdgePerturbHyperparameters>(problem_def.get(), 4));
     run->numberSubRuns = 100;
     run->samplesPerSubRun = 100;
     diagnostics.addRun(run);
 
     run = std::shared_ptr<ProblemRunType>(
-            new AccelShiftTruncatedEnergyAugmentationRun<GraphEdgeDropParameters,
-                    GraphEdgeDropHyperparameters>(problem_def.get(), 4));
-    run->numberSubRuns = 100;
-    run->samplesPerSubRun = 100;
-    diagnostics.addRun(run);
-
-    run = std::shared_ptr<ProblemRunType>(
-            new AccelShiftTruncatedEnergyAugmentationRun<GraphEdgeDropParameters,
-                    GraphEdgeDropHyperparameters>(problem_def.get(), 6));
+            new AccelShiftTruncatedEnergyAugmentationRun<GraphEdgePerturbParameters,
+                    GraphEdgePerturbHyperparameters>(problem_def.get(), 6));
     run->numberSubRuns = 100;
     run->samplesPerSubRun = 100;
     diagnostics.addRun(run);
