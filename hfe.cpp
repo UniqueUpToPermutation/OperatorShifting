@@ -139,7 +139,7 @@ namespace hfe {
 
 	void Geometry::save(const std::string & path)
 	{
-		ofstream f = ofstream(path, ios::out | ios::binary);
+		ofstream f(path, ios::out | ios::binary);
 
 		char hasPositions = this->hasPositions();
 		char hasUvs = this->hasUVs();
