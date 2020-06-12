@@ -2,12 +2,20 @@
 #include "augmentation.h"
 #include "graphlap.h"
 #include "matutil.h"
+#include "testbeds.h"
 
 #include <random>
 #include <set>
 
 using namespace aug;
 using namespace lemon;
+
+#define DEFAULT_P 0.75
+#define DEFAULT_GAMMA 1.0
+#define DEFAULT_GRAPH_PATH "Graphs/fb-pages-food/fb-pages-food.edges"
+#define DEFAULT_PERTURB_TYPE_STRING "gamma"
+#define DEFAULT_FORMAT "unweighted"
+#define DEFAULT_PERTURB_TYPE PERTURB_TYPE_GAMMA
 
 std::default_random_engine dgnEdgeDropRnd(std::chrono::system_clock::now().time_since_epoch().count());
 
@@ -62,14 +70,34 @@ typedef Diagnostics<GraphEdgeDropParameters, GraphEdgeDropHyperparameters, Graph
 typedef ProblemRun<GraphEdgeDropParameters, GraphEdgeDropHyperparameters>
         ProblemRunType;
 
-void dgnGraphEdgeDrop() {
+void dgnGraphEdgeDrop(int argc, char** argv) {
+    double p = DEFAULT_P;
+    double gamma = DEFAULT_GAMMA;
 
-    double p = 0.75;
-    double gamma = 1.0;
+    std::string format = DEFAULT_FORMAT;
+    std::string graphPath =  DEFAULT_GRAPH_PATH;
+
+    if (argc > 0)
+        graphPath = argv[0];
+    if (argc > 1)
+        format = argv[1];
+    if (argc > 2)
+        p = std::stod(argv[2]);
+    if (argc > 3)
+        gamma = std::stod(argv[3]);
+
+    std::for_each(format.begin(), format.end(), [](char& c) { c = std::tolower(c); });
+
     ListGraph graph;
-    loadGraphUnweighted("Graphs/fb-pages-food/fb-pages-food.edges", &graph);
-    std::shared_ptr<ListGraph::EdgeMap<double>> pWeights(new ListGraph::EdgeMap<double>(graph, 1.0));
-    GraphEdgeDropParameters params{pWeights};
+    GraphEdgeDropParameters params;
+    params.weights = std::shared_ptr<ListGraph::EdgeMap<double>>(new ListGraph::EdgeMap<double>(graph, 1.0));
+
+    if (format == "weighted") {
+        loadGraphWeighted(graphPath, &graph, params.weights.get());
+    } else {
+        loadGraphUnweighted(graphPath, &graph);
+        params.weights = std::shared_ptr<ListGraph::EdgeMap<double>>(new ListGraph::EdgeMap<double>(graph, 1.0));
+    }
 
     auto hyperparams = GraphEdgeDropHyperparameters{&graph, p, gamma};
     auto true_mat_dist = std::shared_ptr<DistributionBase>(new GraphEdgeDropDistribution(params, hyperparams));

@@ -1,6 +1,7 @@
 #include "auxDiagnostics.h"
 #include "hfe.h"
 #include "meshlap.h"
+#include "testbeds.h"
 
 #include <random>
 
@@ -68,7 +69,7 @@ typedef Diagnostics<MeshLaplacianParameters, MeshLaplacianHyperparameters, MeshL
 typedef ProblemRun<MeshLaplacianParameters, MeshLaplacianHyperparameters>
         ProblemRunType;
 
-void dgnMeshLaplacian() {
+void dgnMeshLaplacian(int argc, char** argv) {
     std::shared_ptr<Geometry> geo(loadJson("Meshes/bunny_low.json"));
 
     double scaling = (geo->getBoundingBox().upper - geo->getBoundingBox().lower).norm();

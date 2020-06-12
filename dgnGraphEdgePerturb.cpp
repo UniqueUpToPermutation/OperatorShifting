@@ -2,9 +2,16 @@
 #include "augmentation.h"
 #include "graphlap.h"
 #include "matutil.h"
+#include "testbeds.h"
 
 #include <random>
 #include <set>
+
+#define DEFAULT_STD_DEV 2.0
+#define DEFAULT_GRAPH_PATH "Graphs/fb-pages-food/fb-pages-food.edges"
+#define DEFAULT_PERTURB_TYPE_STRING "gamma"
+#define DEFAULT_FORMAT "unweighted"
+#define DEFAULT_PERTURB_TYPE PERTURB_TYPE_GAMMA
 
 using namespace aug;
 using namespace lemon;
@@ -12,16 +19,31 @@ using namespace lemon;
 std::default_random_engine dgnEdgePeturbRnd(std::chrono::system_clock::now().time_since_epoch().count());
 
 void perturb(const ListGraph* graph, const ListGraph::EdgeMap<double>* base,
-             const double stddev,
+             const PerturbType pertubType, const double stddev,
              ListGraph::EdgeMap<double>* output) {
-    auto alpha = stddev * stddev;
-    auto beta = 1.0 / (stddev * stddev);
-    std::gamma_distribution<double> gammaDist(alpha, beta);
+    switch (pertubType) {
+        case PERTURB_TYPE_DISCRETE: {
+            std::bernoulli_distribution bernoulliDist;
 
-    for (ListGraph::EdgeIt e(*graph); e != INVALID; ++e) {
-        double oldValue = base->operator[](e);
-        double newValue = gammaDist(dgnEdgePeturbRnd) * oldValue;
-        output->set(e, newValue);
+            for (ListGraph::EdgeIt e(*graph); e != INVALID; ++e) {
+                double oldValue = base->operator[](e);
+                double newValue = ((stddev * (2.0 * bernoulliDist(dgnEdgePeturbRnd) - 1.0)) + 1.0) * oldValue;
+                output->set(e, newValue);
+            }
+            break;
+        }
+        case PERTURB_TYPE_GAMMA: {
+            auto alpha = 1.0 / (stddev * stddev);
+            auto beta = 1.0 / (stddev * stddev);
+            std::gamma_distribution<double> gammaDist(alpha, beta);
+
+            for (ListGraph::EdgeIt e(*graph); e != INVALID; ++e) {
+                double oldValue = base->operator[](e);
+                double newValue = gammaDist(dgnEdgePeturbRnd) * oldValue;
+                output->set(e, newValue);
+            }
+            break;
+        }
     }
 }
 
@@ -33,6 +55,7 @@ struct GraphEdgePerturbHyperparameters {
     Eigen::SparseMatrix<double>* interiorExtractorLeft;
     Eigen::SparseMatrix<double>* interiorExtractorRight;
     double stddev;
+    PerturbType perturbType;
 };
 typedef MatrixParameterDistribution<GraphEdgePerturbParameters, GraphEdgePerturbHyperparameters > DistributionBase;
 typedef ProblemDefinition<GraphEdgePerturbParameters, GraphEdgePerturbHyperparameters > ProblemDefType;
@@ -41,7 +64,8 @@ class GraphEdgePerturbDistribution : public DistributionBase {
 public:
     void drawParameters(GraphEdgePerturbParameters* output) const override {
         auto newWeights = std::shared_ptr<ListGraph::EdgeMap<double>>(new ListGraph::EdgeMap<double>(*hyperparameters.graph));
-        perturb(hyperparameters.graph, parameters.weights.get(), hyperparameters.stddev, newWeights.get());
+        perturb(hyperparameters.graph, parameters.weights.get(), hyperparameters.perturbType,
+                hyperparameters.stddev, newWeights.get());
         output->weights = newWeights;
     }
     std::shared_ptr<IInvertibleMatrixOperator> convert(const GraphEdgePerturbParameters& params) const override {
@@ -62,13 +86,44 @@ typedef Diagnostics<GraphEdgePerturbParameters, GraphEdgePerturbHyperparameters,
 typedef ProblemRun<GraphEdgePerturbParameters, GraphEdgePerturbHyperparameters>
         ProblemRunType;
 
-void dgnGraphEdgePerturb() {
+void dgnGraphEdgePerturb(int argc, char** argv) {
+    double std_dev = DEFAULT_STD_DEV;
+    std::string format = DEFAULT_FORMAT;
+    std::string graphPath =  DEFAULT_GRAPH_PATH;
+    std::string perturbTypeString = DEFAULT_PERTURB_TYPE_STRING;
 
-    double std_dev = 2.0;
+    if (argc > 0)
+        graphPath = argv[0];
+    if (argc > 1)
+        format = argv[1];
+    if (argc > 2)
+        std_dev = std::stod(argv[2]);
+    if (argc > 3)
+        perturbTypeString = argv[3];
+
+    std::for_each(format.begin(), format.end(), [](char& c) { c = std::tolower(c); });
+    std::for_each(perturbTypeString.begin(), perturbTypeString.end(), [](char& c) { c = std::tolower(c); });
+
+    PerturbType perturbType = DEFAULT_PERTURB_TYPE;
+
+    if (perturbTypeString == "discrete")
+        perturbType = PERTURB_TYPE_DISCRETE;
+    else if (perturbTypeString == "gamma")
+        perturbType = PERTURB_TYPE_GAMMA;
+    else
+        perturbType = DEFAULT_PERTURB_TYPE;
+
     ListGraph graph;
-    loadGraphUnweighted("Graphs/fb-pages-food/fb-pages-food.edges", &graph);
-    std::shared_ptr<ListGraph::EdgeMap<double>> pWeights(new ListGraph::EdgeMap<double>(graph, 1.0));
-    GraphEdgePerturbParameters params{pWeights};
+    GraphEdgePerturbParameters params;
+    params.weights = std::shared_ptr<ListGraph::EdgeMap<double>>(new ListGraph::EdgeMap<double>(graph, 1.0));
+
+    if (format == "weighted") {
+        loadGraphWeighted(graphPath, &graph, params.weights.get());
+    }
+    else {
+        loadGraphUnweighted(graphPath, &graph);
+        params.weights = std::shared_ptr<ListGraph::EdgeMap<double>>(new ListGraph::EdgeMap<double>(graph, 1.0));
+    }
 
     std::vector<int> boundary = {1, 60, 100, 127, 200}; // Arbitrarily selected nodes
     std::vector<int> all;
@@ -83,7 +138,8 @@ void dgnGraphEdgePerturb() {
     createSlicingMatrix(all.size(), interior, &interiorExtractorLeft);
     Eigen::SparseMatrix<double> interiorExtractorRight = interiorExtractorLeft.transpose();
 
-    auto hyperparams = GraphEdgePerturbHyperparameters{&graph, &interiorExtractorLeft, &interiorExtractorRight, std_dev};
+    auto hyperparams = GraphEdgePerturbHyperparameters{&graph, &interiorExtractorLeft, &interiorExtractorRight,
+                                                       std_dev, perturbType};
     auto true_mat_dist = std::shared_ptr<DistributionBase>(new GraphEdgePerturbDistribution(params, hyperparams));
     auto problem_def = std::shared_ptr<ProblemDefType>(new ProblemDefType(true_mat_dist));
     auto diagnostics = DiagnosticsType(problem_def);

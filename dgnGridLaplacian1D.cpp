@@ -1,7 +1,17 @@
 #include "diagnostics.h"
 #include "augmentation.h"
+#include "testbeds.h"
+
+#include <random>
 
 using namespace aug;
+
+#define DEFAULT_N 128
+#define DEFAULT_STD_DEV 0.5
+#define DEFAULT_PERTURB_TYPE PERTURB_TYPE_DISCRETE
+#define DEFAULT_PERTURB_TYPE_STRING "discrete"
+
+std::default_random_engine dgnGridLap1DRnd(std::chrono::system_clock::now().time_since_epoch().count());
 
 void formLaplacian1D(const Eigen::VectorXd& a, Eigen::SparseMatrix<double>* output) {
     int n = a.size();
@@ -28,13 +38,30 @@ void formLaplacian1D(const Eigen::VectorXd& a, Eigen::SparseMatrix<double>* outp
     output->setFromTriplets(nonzeros.begin(), nonzeros.end());
 }
 
-void perturbBackground1D(const Eigen::VectorXd& a, const double std_dev, Eigen::VectorXd* output) {
+void perturbBackground1D(const Eigen::VectorXd& a, const PerturbType perturbType,
+        const double std_dev, Eigen::VectorXd* output) {
     size_t n = a.size();
-    Eigen::VectorXd rnd = Eigen::VectorXd::Random(a.size());
-    for (size_t i = 0; i < n; ++i)
-        rnd(i) = (rnd(i) < 0.0 ? -1.0 : 1.0);
-    Eigen::VectorXd tmp = std_dev * rnd.array() + 1.0;
-    *output = a.cwiseProduct(tmp);
+    switch (perturbType) {
+        // Selects z_e from {1 - std_dev, 1 + std_dev}
+        case PERTURB_TYPE_DISCRETE: {
+            Eigen::VectorXd rnd = Eigen::VectorXd::Random(a.size());
+            for (size_t i = 0; i < n; ++i)
+                rnd(i) = (rnd(i) < 0.0 ? -1.0 : 1.0);
+            Eigen::VectorXd tmp = std_dev * rnd.array() + 1.0;
+            *output = a.cwiseProduct(tmp);
+            break;
+        }
+        // Selects z_e from a gamma distribution
+        case PERTURB_TYPE_GAMMA: {
+            auto alpha = 1.0 / (std_dev * std_dev);
+            auto beta = 1.0 / (std_dev * std_dev);
+            std::gamma_distribution<double> gammaDist(alpha, beta);
+            *output = Eigen::VectorXd::Zero(n);
+            for (int i = 0; i < n; ++i)
+                (*output)(i) = a(i) * gammaDist(dgnGridLap1DRnd);
+            break;
+        }
+    }
 }
 
 struct GridLaplacian1DParameters {
@@ -42,6 +69,7 @@ struct GridLaplacian1DParameters {
 };
 struct GridLaplacian1DHyperparameters {
     double stdDev;
+    PerturbType perturbType;
 };
 typedef MatrixParameterDistribution<GridLaplacian1DParameters, GridLaplacian1DHyperparameters> DistributionBase;
 typedef ProblemDefinition<GridLaplacian1DParameters, GridLaplacian1DHyperparameters> ProblemDefType;
@@ -49,7 +77,8 @@ typedef ProblemDefinition<GridLaplacian1DParameters, GridLaplacian1DHyperparamet
 class GridLaplacian1DDistribution : public DistributionBase {
 public:
     void drawParameters(GridLaplacian1DParameters* output) const override {
-        perturbBackground1D(parameters.trueA, hyperparameters.stdDev, &output->trueA);
+        perturbBackground1D(parameters.trueA, hyperparameters.perturbType,
+                hyperparameters.stdDev, &output->trueA);
     }
     std::shared_ptr<IInvertibleMatrixOperator> convert(const GridLaplacian1DParameters& params) const override {
         Eigen::SparseMatrix<double> matrix;
@@ -69,9 +98,29 @@ typedef Diagnostics<GridLaplacian1DParameters, GridLaplacian1DHyperparameters, G
 typedef ProblemRun<GridLaplacian1DParameters, GridLaplacian1DHyperparameters>
     ProblemRunType;
 
-void dgnGridLaplacian1D() {
-    size_t n = 128;
-    double std_dev = 0.5;
+void dgnGridLaplacian1D(int argc, char** argv) {
+    size_t n = DEFAULT_N;
+    double std_dev = DEFAULT_STD_DEV;
+    std::string perturbTypeString = DEFAULT_PERTURB_TYPE_STRING;
+
+    if (argc > 0)
+        n = std::stoi(argv[0]);
+    if (argc > 1)
+        std_dev = std::stod(argv[1]);
+    if (argc > 2)
+        perturbTypeString = argv[2];
+
+    std::for_each(perturbTypeString.begin(), perturbTypeString.end(), [](char& c) { c = std::tolower(c); });
+
+    PerturbType perturbType = DEFAULT_PERTURB_TYPE;
+
+    if (perturbTypeString == "discrete")
+        perturbType = PERTURB_TYPE_DISCRETE;
+    else if (perturbTypeString == "gamma")
+        perturbType = PERTURB_TYPE_GAMMA;
+    else
+        perturbType = DEFAULT_PERTURB_TYPE;
+
     Eigen::VectorXd true_a = Eigen::VectorXd::Ones(n);
     double h = 1.0 / (n - 1.0);
     Eigen::VectorXd xs = Eigen::VectorXd::LinSpaced(n - 1,1, n - 1) * h;
@@ -81,7 +130,7 @@ void dgnGridLaplacian1D() {
     auto bDistribution = std::shared_ptr<IVectorDistribution>(new VectorDistributionFromLambda(bDistribution_func));
 
     auto params = GridLaplacian1DParameters{ true_a };
-    auto hyperparams = GridLaplacian1DHyperparameters{ std_dev };
+    auto hyperparams = GridLaplacian1DHyperparameters{ std_dev, perturbType };
     auto true_mat_dist = std::shared_ptr<DistributionBase>(new GridLaplacian1DDistribution(params, hyperparams));
     auto problem_def = std::shared_ptr<ProblemDefType>(new ProblemDefType(true_mat_dist));
     // problem_def->bDistribution = bDistribution; // Don't use the above distribution, use random normal by default
