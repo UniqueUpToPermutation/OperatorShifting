@@ -152,4 +152,5 @@ void dgnGraphEdgeDrop() {
 
     diagnostics.run(4);
     diagnostics.printResults();
+    diagnostics.printLatexTable();
 }

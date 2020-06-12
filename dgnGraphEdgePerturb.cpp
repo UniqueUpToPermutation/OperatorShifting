@@ -164,4 +164,5 @@ void dgnGraphEdgePerturb() {
 
     diagnostics.run(4);
     diagnostics.printResults();
+    diagnostics.printLatexTable();
 }
