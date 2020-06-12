@@ -35,7 +35,7 @@ void perturb(const ListGraph* graph, const ListGraph::EdgeMap<double>* base,
         }
         case PERTURB_TYPE_GAMMA: {
             auto alpha = 1.0 / (stddev * stddev);
-            auto beta = 1.0 / (stddev * stddev);
+            auto beta = stddev * stddev;
             std::gamma_distribution<double> gammaDist(alpha, beta);
 
             for (ListGraph::EdgeIt e(*graph); e != INVALID; ++e) {

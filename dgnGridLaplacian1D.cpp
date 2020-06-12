@@ -55,11 +55,13 @@ void perturbBackground1D(const Eigen::VectorXd& a, const PerturbType perturbType
         // Selects z_e from a gamma distribution
         case PERTURB_TYPE_GAMMA: {
             auto alpha = 1.0 / (std_dev * std_dev);
-            auto beta = 1.0 / (std_dev * std_dev);
+            auto beta = std_dev * std_dev;
             std::gamma_distribution<double> gammaDist(alpha, beta);
             *output = Eigen::VectorXd::Zero(n);
             for (int i = 0; i < n; ++i)
                 (*output)(i) = a(i) * gammaDist(dgnGridLap1DRnd);
+
+            std::cout << *output << std::endl;
             break;
         }
     }
