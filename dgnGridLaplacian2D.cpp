@@ -3,6 +3,7 @@
 #include "testbeds.h"
 
 #include <random>
+#include <cstring>
 
 #define DEFAULT_N 64
 #define DEFAULT_STD_DEV 0.5

@@ -3,6 +3,7 @@
 #include "testbeds.h"
 
 #include <random>
+#include <cstring>
 
 using namespace aug;
 

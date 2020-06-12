@@ -2,6 +2,7 @@
 #include <iostream>
 #include <vector>
 #include "testbeds.h"
+#include <cstring>
 
 #define DEFAULT dgnGraphEdgePerturb
 

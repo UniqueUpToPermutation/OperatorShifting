@@ -6,6 +6,7 @@
 
 #include <random>
 #include <set>
+#include <cstring>
 
 #define DEFAULT_STD_DEV 2.0
 #define DEFAULT_GRAPH_PATH "Graphs/fb-pages-food/fb-pages-food.edges"

@@ -6,6 +6,7 @@
 
 #include <random>
 #include <set>
+#include <cstring>
 
 using namespace aug;
 using namespace lemon;
