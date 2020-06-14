@@ -33,7 +33,7 @@ int main(int argc, char** argv)
     else
         strMethod = argv[1];
 
-    if (argc > 1)
+    if (argc > 1 || globalConfigAvailable)
     {
         if (strMethod == "GridLaplacian1D")
             dgnGridLaplacian1D(argc - 2, &argv[2]);

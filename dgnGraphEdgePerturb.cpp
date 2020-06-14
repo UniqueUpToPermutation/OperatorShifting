@@ -179,7 +179,7 @@ void dgnGraphEdgePerturb(int argc, char** argv) {
     run->numberSubRuns = numSubRunsNaive;
     diagnostics.addRun(run);
 
-    run = std::shared_ptr<ProblemRunType>(
+    /*run = std::shared_ptr<ProblemRunType>(
             new AugmentationRun<GraphEdgePerturbParameters, GraphEdgePerturbHyperparameters>(problem_def.get()));
     run->numberSubRuns = numSubRuns;
     run->samplesPerSubRun = samplesPerSubRun;
@@ -245,7 +245,7 @@ void dgnGraphEdgePerturb(int argc, char** argv) {
                     GraphEdgePerturbHyperparameters>(problem_def.get(), 6));
     run->numberSubRuns = numSubRuns;
     run->samplesPerSubRun = samplesPerSubRun;
-    diagnostics.addRun(run);
+    diagnostics.addRun(run);*/
 
     diagnostics.run(threadCount);
     diagnostics.printResults();

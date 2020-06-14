@@ -1,0 +1,46 @@
+{
+  "default" : "GraphEdgePerturb",
+
+  "GridLaplacian1D" : {
+    "gridSize" : 128,
+    "stdDev" : 0.5,
+    "distribution" : "discrete",
+    "threadCount" : 4,
+    "numSubRunsNaive" : 10000,
+    "numSubRuns" : 100,
+    "samplesPerSubRun" : 100
+  },
+
+  "GridLaplacian2D" : {
+    "gridSize" : 128,
+    "stdDev" : 0.5,
+    "distribution" : "discrete",
+    "threadCount" : 4,
+    "numSubRunsNaive" : 10000,
+    "numSubRuns" : 100,
+    "samplesPerSubRun" : 100
+  },
+
+  "GraphEdgePerturb" : {
+    "graphSrc" : "Graphs/fb-pages-food/fb-pages-food.edges",
+    "format" : "unweighted",
+    "stdDev" : 0.6,
+    "distribution" : "discrete",
+    "threadCount" : 4,
+    "numSubRunsNaive" : 10000,
+    "numSubRuns" : 100,
+    "samplesPerSubRun" : 100,
+    "boundary" : [1, 60, 100, 127, 200]
+  },
+
+  "GraphEdgeDrop" : {
+    "graphSrc" : "Graphs/fb-pages-food/fb-pages-food.edges",
+    "format" : "unweighted",
+    "gamma" : 1.0,
+    "p" : 0.75,
+    "threadCount" : 4,
+    "numSubRunsNaive" : 10000,
+    "numSubRuns" : 100,
+    "samplesPerSubRun" : 100
+  }
+}
