@@ -4,6 +4,7 @@
 #include <string>
 #include <fstream>
 #include <vector>
+#include <set>
 
 using namespace std;
 using namespace lemon;
@@ -46,29 +47,46 @@ void loadGraphWeighted(const std::string& filename, lemon::ListGraph* output,
     if (!f.is_open())
         throw "LoadGraph: file not found!";
 
-    std::vector<std::pair<std::pair<int, int>, double>> edges;
+    std::map<std::pair<int, int>, double> edge_weights;
 
     for (std::string line; std::getline(f, line); ) {
         if (line[0] == '%') // Ignore comments
             continue;
 
-        std::replace_if(std::begin(line), std::end(line), [] (char x) { return std::ispunct(x); }, ' ');
+        std::replace_if(std::begin(line), std::end(line), [] (char x) { return x == ','; }, ' ');
         stringstream ss(line);
 
         int u, v;
         double w;
-        if (ss >> u >> v >> w)
-            edges.emplace_back(std::make_pair(std::make_pair(u, v), w));
+        if (ss >> u >> v >> w) {
+            // got an edge here!
+            auto forward = std::make_pair(u, v);
+            auto backward = std::make_pair(v, u);
+
+            // check for duplicates
+            auto forward_it = edge_weights.find(forward);
+            auto backward_it = edge_weights.find(backward);
+
+            if (backward_it != edge_weights.end()) {
+                // Duplicate!
+                // Add edge weight to backward edge
+                edge_weights[backward_it->first] = backward_it->second + w;
+            } else if (forward_it != edge_weights.end()) {
+                edge_weights[forward_it->first] = forward_it->second + w;
+            } else {
+                edge_weights[forward] = w;
+            }
+        }
     }
 
     int max_id = -1;
-    for (auto& e : edges)
+    for (auto& e : edge_weights)
         max_id = std::max(max_id, std::max(e.first.first, e.first.second));
 
     for (int i = 0; i <= max_id; ++i)
         output->addNode();
 
-    for (auto& e : edges) {
+    for (auto& e : edge_weights) {
         auto eInGraph = output->addEdge(output->nodeFromId(e.first.first), output->nodeFromId(e.first.second));
         (*weights)[eInGraph] = e.second;
     }
