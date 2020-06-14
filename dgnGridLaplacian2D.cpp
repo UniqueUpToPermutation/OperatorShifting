@@ -9,6 +9,10 @@
 #define DEFAULT_STD_DEV 0.5
 #define DEFAULT_PERTURB_TYPE PERTURB_TYPE_DISCRETE
 #define DEFAULT_PERTURB_TYPE_STRING "discrete"
+#define DEFAULT_THREAD_COUNT 4
+#define DEFAULT_NUM_SUB_RUNS_NAIVE 10000
+#define DEFAULT_NUM_SUB_RUNS 100
+#define SAMPLES_PER_SUB_RUN 100
 
 using namespace aug;
 
@@ -144,8 +148,28 @@ typedef ProblemRun<GridLaplacian2DParameters, GridLaplacian2DHyperparameters>
 void dgnGridLaplacian2D(int argc, char** argv) {
     size_t n = DEFAULT_N;
     double std_dev = DEFAULT_STD_DEV;
-
     std::string perturbTypeString = DEFAULT_PERTURB_TYPE_STRING;
+    int threadCount = DEFAULT_THREAD_COUNT;
+    int numSubRunsNaive = DEFAULT_NUM_SUB_RUNS_NAIVE;
+    int numSubRuns = DEFAULT_NUM_SUB_RUNS;
+    int samplesPerSubRun = SAMPLES_PER_SUB_RUN;
+
+    std::cout << "################ GridLaplacian2D ################" << std::endl << std::endl;
+
+    // Read global configuration from file
+    if (globalConfigAvailable) {
+        auto config = globalConfig["GridLaplacian1D"];
+        n = config["gridSize"].get<int>();
+        std_dev = config["stdDev"].get<double>();
+        perturbTypeString = config["distribution"].get<std::string>();
+        threadCount = config["threadCount"].get<int>();
+        numSubRunsNaive = config["numSubRunsNaive"].get<int>();
+        numSubRuns = config["numSubRuns"].get<int>();
+        samplesPerSubRun = config["samplesPerSubRun"].get<int>();
+
+        std::cout << "Configuration:" << std::endl;
+        std::cout << std::setw(4) << config << std::endl << std::endl;
+    }
 
     if (argc > 0)
         n = std::stoi(argv[0]);
@@ -191,78 +215,78 @@ void dgnGridLaplacian2D(int argc, char** argv) {
     // Naive run
     auto run = std::shared_ptr<ProblemRunType>(
             new NaiveRun<GridLaplacian2DParameters, GridLaplacian2DHyperparameters>(problem_def.get()));
-    run->numberSubRuns = 10000;
+    run->numberSubRuns = numSubRunsNaive;
     diagnostics.addRun(run);
 
     run = std::shared_ptr<ProblemRunType>(
             new AugmentationRun<GridLaplacian2DParameters, GridLaplacian2DHyperparameters>(problem_def.get()));
-    run->numberSubRuns = 100;
-    run->samplesPerSubRun = 100;
+    run->numberSubRuns = numSubRuns;
+    run->samplesPerSubRun = samplesPerSubRun;
     diagnostics.addRun(run);
 
     run = std::shared_ptr<ProblemRunType>(
             new EnergyAugmentationRun<GridLaplacian2DParameters, GridLaplacian2DHyperparameters>(problem_def.get()));
-    run->numberSubRuns = 100;
-    run->samplesPerSubRun = 100;
+    run->numberSubRuns = numSubRuns;
+    run->samplesPerSubRun = samplesPerSubRun;
     diagnostics.addRun(run);
 
     run = std::shared_ptr<ProblemRunType>(
             new TruncatedEnergyAugmentationRun<GridLaplacian2DParameters,
                     GridLaplacian2DHyperparameters>(problem_def.get(), 2));
-    run->numberSubRuns = 100;
-    run->samplesPerSubRun = 100;
+    run->numberSubRuns = numSubRuns;
+    run->samplesPerSubRun = samplesPerSubRun;
     diagnostics.addRun(run);
 
     run = std::shared_ptr<ProblemRunType>(
             new TruncatedEnergyAugmentationRun<GridLaplacian2DParameters,
                     GridLaplacian2DHyperparameters>(problem_def.get(), 4));
-    run->numberSubRuns = 100;
-    run->samplesPerSubRun = 100;
+    run->numberSubRuns = numSubRuns;
+    run->samplesPerSubRun = samplesPerSubRun;
     diagnostics.addRun(run);
 
     run = std::shared_ptr<ProblemRunType>(
             new TruncatedEnergyAugmentationRun<GridLaplacian2DParameters,
                     GridLaplacian2DHyperparameters>(problem_def.get(), 6));
-    run->numberSubRuns = 100;
-    run->samplesPerSubRun = 100;
+    run->numberSubRuns = numSubRuns;
+    run->samplesPerSubRun = samplesPerSubRun;
     diagnostics.addRun(run);
 
     run = std::shared_ptr<ProblemRunType>(
             new TruncatedEnergyAugmentationRun<GridLaplacian2DParameters,
                     GridLaplacian2DHyperparameters>(problem_def.get(), 2, TRUNCATION_WINDOW_HARD));
-    run->numberSubRuns = 100;
-    run->samplesPerSubRun = 100;
+    run->numberSubRuns = numSubRuns;
+    run->samplesPerSubRun = samplesPerSubRun;
     diagnostics.addRun(run);
 
     run = std::shared_ptr<ProblemRunType>(
             new TruncatedEnergyAugmentationRun<GridLaplacian2DParameters,
                     GridLaplacian2DHyperparameters>(problem_def.get(), 4, TRUNCATION_WINDOW_HARD));
-    run->numberSubRuns = 100;
-    run->samplesPerSubRun = 100;
+    run->numberSubRuns = numSubRuns;
+    run->samplesPerSubRun = samplesPerSubRun;
     diagnostics.addRun(run);
 
     run = std::shared_ptr<ProblemRunType>(
             new AccelShiftTruncatedEnergyAugmentationRun<GridLaplacian2DParameters,
                     GridLaplacian2DHyperparameters>(problem_def.get(), 2));
-    run->numberSubRuns = 100;
-    run->samplesPerSubRun = 100;
+    run->numberSubRuns = numSubRuns;
+    run->samplesPerSubRun = samplesPerSubRun;
     diagnostics.addRun(run);
 
     run = std::shared_ptr<ProblemRunType>(
             new AccelShiftTruncatedEnergyAugmentationRun<GridLaplacian2DParameters,
                     GridLaplacian2DHyperparameters>(problem_def.get(), 4));
-    run->numberSubRuns = 100;
-    run->samplesPerSubRun = 100;
+    run->numberSubRuns = numSubRuns;
+    run->samplesPerSubRun = samplesPerSubRun;
     diagnostics.addRun(run);
 
     run = std::shared_ptr<ProblemRunType>(
             new AccelShiftTruncatedEnergyAugmentationRun<GridLaplacian2DParameters,
                     GridLaplacian2DHyperparameters>(problem_def.get(), 6));
-    run->numberSubRuns = 100;
-    run->samplesPerSubRun = 100;
+    run->numberSubRuns = numSubRuns;
+    run->samplesPerSubRun = samplesPerSubRun;
     diagnostics.addRun(run);
 
-    diagnostics.run(4);
+    diagnostics.run(threadCount);
     diagnostics.printResults();
     diagnostics.printLatexTable();
 }

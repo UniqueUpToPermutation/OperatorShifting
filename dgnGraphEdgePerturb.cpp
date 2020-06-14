@@ -13,6 +13,10 @@
 #define DEFAULT_PERTURB_TYPE_STRING "gamma"
 #define DEFAULT_FORMAT "unweighted"
 #define DEFAULT_PERTURB_TYPE PERTURB_TYPE_GAMMA
+#define DEFAULT_THREAD_COUNT 4
+#define DEFAULT_NUM_SUB_RUNS_NAIVE 10000
+#define DEFAULT_NUM_SUB_RUNS 100
+#define SAMPLES_PER_SUB_RUN 100
 
 using namespace aug;
 using namespace lemon;
@@ -92,6 +96,30 @@ void dgnGraphEdgePerturb(int argc, char** argv) {
     std::string format = DEFAULT_FORMAT;
     std::string graphPath =  DEFAULT_GRAPH_PATH;
     std::string perturbTypeString = DEFAULT_PERTURB_TYPE_STRING;
+    int threadCount = DEFAULT_THREAD_COUNT;
+    int numSubRunsNaive = DEFAULT_NUM_SUB_RUNS_NAIVE;
+    int numSubRuns = DEFAULT_NUM_SUB_RUNS;
+    int samplesPerSubRun = SAMPLES_PER_SUB_RUN;
+    std::vector<int> boundary = {1, 60, 100, 127, 200}; // Arbitrarily selected nodes
+
+    std::cout << "################ GraphEdgePerturb ################" << std::endl << std::endl;
+
+    // Read global configuration from file
+    if (globalConfigAvailable) {
+        auto config = globalConfig["GraphEdgePerturb"];
+        format = config["format"].get<std::string>();
+        graphPath = config["graphSrc"].get<std::string>();
+        std_dev = config["stdDev"].get<double>();
+        perturbTypeString = config["distribution"].get<std::string>();
+        threadCount = config["threadCount"].get<int>();
+        numSubRunsNaive = config["numSubRunsNaive"].get<int>();
+        numSubRuns = config["numSubRuns"].get<int>();
+        samplesPerSubRun = config["samplesPerSubRun"].get<int>();
+        boundary = config["boundary"].get<std::vector<int>>();
+
+        std::cout << "Configuration:" << std::endl;
+        std::cout << std::setw(4) << config << std::endl << std::endl;
+    }
 
     if (argc > 0)
         graphPath = argv[0];
@@ -126,7 +154,7 @@ void dgnGraphEdgePerturb(int argc, char** argv) {
         params.weights = std::shared_ptr<ListGraph::EdgeMap<double>>(new ListGraph::EdgeMap<double>(graph, 1.0));
     }
 
-    std::vector<int> boundary = {1, 60, 100, 127, 200}; // Arbitrarily selected nodes
+
     std::vector<int> all;
     int nodeCount = countNodes(graph);
     all.reserve(nodeCount);
@@ -148,78 +176,78 @@ void dgnGraphEdgePerturb(int argc, char** argv) {
     // Naive run
     auto run = std::shared_ptr<ProblemRunType>(
             new NaiveRun<GraphEdgePerturbParameters, GraphEdgePerturbHyperparameters>(problem_def.get()));
-    run->numberSubRuns = 100;
+    run->numberSubRuns = numSubRunsNaive;
     diagnostics.addRun(run);
 
     run = std::shared_ptr<ProblemRunType>(
             new AugmentationRun<GraphEdgePerturbParameters, GraphEdgePerturbHyperparameters>(problem_def.get()));
-    run->numberSubRuns = 100;
-    run->samplesPerSubRun = 100;
+    run->numberSubRuns = numSubRuns;
+    run->samplesPerSubRun = samplesPerSubRun;
     diagnostics.addRun(run);
 
     run = std::shared_ptr<ProblemRunType>(
             new EnergyAugmentationRun<GraphEdgePerturbParameters, GraphEdgePerturbHyperparameters>(problem_def.get()));
-    run->numberSubRuns = 100;
-    run->samplesPerSubRun = 100;
+    run->numberSubRuns = numSubRuns;
+    run->samplesPerSubRun = samplesPerSubRun;
     diagnostics.addRun(run);
 
     run = std::shared_ptr<ProblemRunType>(
             new TruncatedEnergyAugmentationRun<GraphEdgePerturbParameters,
                     GraphEdgePerturbHyperparameters>(problem_def.get(), 2));
-    run->numberSubRuns = 100;
-    run->samplesPerSubRun = 100;
+    run->numberSubRuns = numSubRuns;
+    run->samplesPerSubRun = samplesPerSubRun;
     diagnostics.addRun(run);
 
     run = std::shared_ptr<ProblemRunType>(
             new TruncatedEnergyAugmentationRun<GraphEdgePerturbParameters,
                     GraphEdgePerturbHyperparameters>(problem_def.get(), 4));
-    run->numberSubRuns = 100;
-    run->samplesPerSubRun = 100;
+    run->numberSubRuns = numSubRuns;
+    run->samplesPerSubRun = samplesPerSubRun;
     diagnostics.addRun(run);
 
     run = std::shared_ptr<ProblemRunType>(
             new TruncatedEnergyAugmentationRun<GraphEdgePerturbParameters,
                     GraphEdgePerturbHyperparameters>(problem_def.get(), 6));
-    run->numberSubRuns = 100;
-    run->samplesPerSubRun = 100;
+    run->numberSubRuns = numSubRuns;
+    run->samplesPerSubRun = samplesPerSubRun;
     diagnostics.addRun(run);
 
     run = std::shared_ptr<ProblemRunType>(
             new TruncatedEnergyAugmentationRun<GraphEdgePerturbParameters,
                     GraphEdgePerturbHyperparameters>(problem_def.get(), 2, TRUNCATION_WINDOW_HARD));
-    run->numberSubRuns = 100;
-    run->samplesPerSubRun = 100;
+    run->numberSubRuns = numSubRuns;
+    run->samplesPerSubRun = samplesPerSubRun;
     diagnostics.addRun(run);
 
     run = std::shared_ptr<ProblemRunType>(
             new TruncatedEnergyAugmentationRun<GraphEdgePerturbParameters,
                     GraphEdgePerturbHyperparameters>(problem_def.get(), 4, TRUNCATION_WINDOW_HARD));
-    run->numberSubRuns = 100;
-    run->samplesPerSubRun = 100;
+    run->numberSubRuns = numSubRuns;
+    run->samplesPerSubRun = samplesPerSubRun;
     diagnostics.addRun(run);
 
     run = std::shared_ptr<ProblemRunType>(
             new AccelShiftTruncatedEnergyAugmentationRun<GraphEdgePerturbParameters,
                     GraphEdgePerturbHyperparameters>(problem_def.get(), 2));
-    run->numberSubRuns = 100;
-    run->samplesPerSubRun = 100;
+    run->numberSubRuns = numSubRuns;
+    run->samplesPerSubRun = samplesPerSubRun;
     diagnostics.addRun(run);
 
     run = std::shared_ptr<ProblemRunType>(
             new AccelShiftTruncatedEnergyAugmentationRun<GraphEdgePerturbParameters,
                     GraphEdgePerturbHyperparameters>(problem_def.get(), 4));
-    run->numberSubRuns = 100;
-    run->samplesPerSubRun = 100;
+    run->numberSubRuns = numSubRuns;
+    run->samplesPerSubRun = samplesPerSubRun;
     diagnostics.addRun(run);
 
     run = std::shared_ptr<ProblemRunType>(
             new AccelShiftTruncatedEnergyAugmentationRun<GraphEdgePerturbParameters,
                     GraphEdgePerturbHyperparameters>(problem_def.get(), 6));
-    run->numberSubRuns = 100;
-    run->samplesPerSubRun = 100;
+    run->numberSubRuns = numSubRuns;
+    run->samplesPerSubRun = samplesPerSubRun;
     diagnostics.addRun(run);
 
-    diagnostics.run(4);
+    diagnostics.run(threadCount);
     diagnostics.printResults();
     diagnostics.printLatexTable();
 }
