@@ -657,7 +657,7 @@ namespace aug {
             std::cout << "Method & Order & Window ";
 
             for (auto& norm : problemRuns[0]->norms) {
-                std::cout << "& Rel. " << norm->getAbbreviatedName() << " & $\\pm 2\\sigma$ ";
+                std::cout << "& R. " << norm->getAbbreviatedName() << " & $\\pm 2\\sigma$ ";
             }
             std::cout << "\\\\" << std::endl;
             std::cout << "\\hline \\hline " << std::endl;
