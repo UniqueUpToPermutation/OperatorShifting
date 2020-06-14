@@ -7,3 +7,8 @@ elliptic systems" are implemented herein.
 
 This testbed requires the Eigen linear algebra library, as well as the LEMON graph library.
 To build the test bed you will need CMake.
+
+## Configuration
+
+To update the configuration, please see config.json, make sure that config.json is in the same
+directory as your binary.
