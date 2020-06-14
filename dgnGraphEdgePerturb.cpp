@@ -219,7 +219,7 @@ void dgnGraphEdgePerturb(int argc, char** argv) {
     run->samplesPerSubRun = 100;
     diagnostics.addRun(run);
 
-    diagnostics.run();
+    diagnostics.run(4);
     diagnostics.printResults();
     diagnostics.printLatexTable();
 }
