@@ -1,7 +1,7 @@
 # C++ Operator Augmentation
 
 This is a small testbed of problem for operator augmentation. All the methods in our paper "Operator Augmentation for
-elliptic systems" are implemented herein.
+Noisy Elliptic Systems" are implemented herein.
 
 ## Prerequisites
 
