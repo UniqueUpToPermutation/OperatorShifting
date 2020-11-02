@@ -24,7 +24,7 @@
   "GraphEdgePerturb" : {
     "graphSrc" : "Graphs/fb-pages-food/fb-pages-food.edges",
     "format" : "unweighted",
-    "stdDev" : 0.6,
+    "stdDev" : 0.3,
     "distribution" : "discrete",
     "threadCount" : 4,
     "numSubRunsNaive" : 10000,

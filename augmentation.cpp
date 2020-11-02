@@ -481,8 +481,8 @@ namespace aug {
                     const IVectorDistribution *q_dist,
                     const IMatrixOperator *op_C,
                     Eigen::VectorXd *output) {
-        std::function<double(int, int)> window_func_numerator = &softWindowFuncNumerator;
-        std::function<double(int, int)> window_func_denominator = &softWindowFuncDenominator;
+        std::function<double(int, int)> window_func_numerator = &hardWindowFuncNumerator;
+        std::function<double(int, int)> window_func_denominator = &hardWindowFuncDenominator;
 
         enAugTrunc(num_system_samples, num_per_system_samples,
                    rhs, order, op_Ahat, bootstrap_mat_dist, q_dist,

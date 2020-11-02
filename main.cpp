@@ -41,8 +41,6 @@ int main(int argc, char** argv)
             dgnGridLaplacian2D(argc - 2, &argv[2]);
         else if (strMethod == "GraphEdgePerturb")
             dgnGraphEdgePerturb(argc - 2, &argv[2]);
-        else if (strMethod == "MeshLaplacian")
-            dgnMeshLaplacian(argc - 2, &argv[2]);
         else if (strMethod == "GraphEdgeDrop")
             dgnGraphEdgeDrop(argc - 2, &argv[2]);
         else
