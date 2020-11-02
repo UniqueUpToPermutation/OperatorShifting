@@ -267,8 +267,8 @@ void enAugTrunc(int num_system_samples,
 * **bootstrap_mat_dist**: A bootstrapped distribution for the random matrix **A**.
 * **q_dist**: A distribution for drawing samples of the random vectors **q** as described in algorithm (7.1). This distribution depends on the choice of **C**. If **C**  is the identity, then the default is just to sample from a standard multivariate normal distribution.
 * **op_C**: The operator **C** as described in algorithm (7.1). Defaults to the identity.
-* **window_func_numerator**: The windowing function to use for the numerator of the truncated augmentation factor expression. You may use **softWindowFuncNumerator** or **hardWindowFuncNumerator** for the soft/hard windowing functions presented respectively. Defaults to hard windowing function.
-* **window_func_denominator**: The windowing function to use for the denominator of the truncated augmentation factor expression. You may use **softWindowFuncDenominator** or **hardWindowFuncDenominator** for the soft/hard windowing functions presented respectively. Defaults to hard windowing function.
+* **window_func_numerator**: The windowing function to use for the numerator of the truncated augmentation factor expression. You may use **softWindowFuncNumerator** or **hardWindowFuncNumerator** for the soft/hard windowing functions presented respectively. Defaults to soft windowing function.
+* **window_func_denominator**: The windowing function to use for the denominator of the truncated augmentation factor expression. You may use **softWindowFuncDenominator** or **hardWindowFuncDenominator** for the soft/hard windowing functions presented respectively. Defaults to soft windowing function.
 * **output**: A pointer to where the estimate of the vector **x** should be written to.
 
 ## Accelerated Shifted Truncated Energy-Norm Augmentation (AST-EAG)
@@ -336,6 +336,28 @@ void enAugAccelShiftTrunc(int num_system_samples,
 * **bootstrap_mat_dist**: A bootstrapped distribution for the random matrix **A**.
 * **q_dist**: A distribution for drawing samples of the random vectors **q** as described in algorithm (7.1). This distribution depends on the choice of **C**. If **C**  is the identity, then the default is just to sample from a standard multivariate normal distribution.
 * **op_C**: The operator **C** as described in algorithm (7.1). Defaults to the identity.
-* **window_func_numerator**: The windowing function to use for the numerator of the truncated augmentation factor expression. You may use **softWindowFuncNumerator** or **hardWindowFuncNumerator** for the soft/hard windowing functions presented respectively. Defaults to hard windowing function.
-* **window_func_denominator**: The windowing function to use for the denominator of the truncated augmentation factor expression. You may use **softWindowFuncDenominator** or **hardWindowFuncDenominator** for the soft/hard windowing functions presented respectively. Defaults to hard windowing function.
+* **window_func_numerator**: The windowing function to use for the numerator of the truncated augmentation factor expression. You may use **softWindowFuncNumerator** or **hardWindowFuncNumerator** for the soft/hard windowing functions presented respectively. Defaults to soft windowing function.
+* **window_func_denominator**: The windowing function to use for the denominator of the truncated augmentation factor expression. You may use **softWindowFuncDenominator** or **hardWindowFuncDenominator** for the soft/hard windowing functions presented respectively. Defaults to soft windowing function.
 * **output**: A pointer to where the estimate of the vector **x** should be written to.
+
+# The Diagnostics Framework
+
+We also provide a framework for testing the effectiveness of our methods in the files **diagnostics.cpp** and **diagnostics.h**. This diagnostics framework can be used to replicate our results as well as easily test the operator augmentation method on new problems.
+
+## The Problem Interface
+
+Noisy elliptic system problems are defined by using the **ProblemDefinition** class.
+
+```cpp
+template<typename ParameterType, typename HyperparameterType>
+class ProblemDefinition {
+    [...]
+};
+```
+
+Problem definitions have two template parameters:
+
+* **ParameterType**: This defines the data structure used to parameterize a distribution over elliptic matrices. When a bootstrapped distribution for **A** is formed, these parameters are bootstrapped, (i.e., we use the observed values of these parameters to form a bootstrapped distribution for **A**). For example, in Laplacian problems, these parameters might include the true edge weights of the graph before they are perturbed by noise.
+* **HyperparameterType**: This define a data structure of parameters that do not need to be bootstrapped, but rather are known a priori. For example, these parameters might include the magnitude or standard deviation of the noise in the problem.
+
+We assume that there is a well-defined map from a parameter value to the noisy operator **A**. So for example, in a Laplacian system, if the edge weights are known, then there is a well-defined way to construct the Laplacian.
