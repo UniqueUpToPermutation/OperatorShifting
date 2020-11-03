@@ -5,10 +5,11 @@ Noisy Elliptic Systems](https://arxiv.org/abs/2010.09656) are implemented herein
 
 ![GitHub Logo](images/Diagram.png)
 
-## Prerequisites
+# Dependencies
 
-This testbed requires the Eigen linear algebra library, as well as the LEMON graph library.
-To build the test bed you will need CMake.
+* The **Eigen** linear algebra library. [Available Here](https://gitlab.com/libeigen/eigen).
+* The **LEMON** graph library. [Available Here](https://lemon.cs.elte.hu/trac/lemon/wiki/Downloads).
+* **cmake** for building.
 
 # Configuration
 
@@ -361,3 +362,76 @@ Problem definitions have two template parameters:
 * **HyperparameterType**: This define a data structure of parameters that do not need to be bootstrapped, but rather are known a priori. For example, these parameters might include the magnitude or standard deviation of the noise in the problem.
 
 We assume that there is a well-defined map from a parameter value to the noisy operator **A**. So for example, in a Laplacian system, if the edge weights are known, then there is a well-defined way to construct the Laplacian.
+
+The problem definition takes in its constructor a pointer to a matrix parameter distribution,
+
+```cpp
+template<typename ParameterType, typename HyperparameterType>
+class MatrixParameterDistribution : public IMatrixDistribution {
+    [...]
+};
+```
+This class represents a distribution over parameters that itself is characterized by a (parameter, hyperparameter) pair. This allows us to bootstrap a distribution from an observed parameter value sampled from the true distribution. To define a problem, you must implement a distribution class that inherits from this type and implements the methods:
+
+```cpp
+virtual void drawParameters(ParameterType *output) const = 0;
+
+virtual std::shared_ptr<IInvertibleMatrixOperator> convert(
+    const ParameterType  params) const = 0;
+
+virtual size_t getDimension() const = 0;
+```
+
+* **drawParameters** samples a parameter value from the distribution.
+* **convert** converts a parameter value to a matrix.
+* **getDimension** gets the dimension of all matrices that will be produced by this distribution.
+
+Once your implementation of **MatrixParameterDistribution** is complete, you can create a **ProblemDefinition** instance from it, and pass that **ProblemDefinition** to our **Diagnostics** class. For example,
+
+```cpp
+auto parameters = ParameterType();
+auto hyperparameters = HyperparameterType();
+
+// [...] Init Parameters and hyperparameters
+
+auto true_distribution = std::shared_ptr<ParameterDistributionType>(
+    new ParameterDistributionType(parameters, hyperparameters));
+
+auto problem_def = std::shared_ptr<
+    ProblemDefinition<ParameterType, HyperparameterType>>(
+        new ProblemDefinition<ParameterType, HyperparameterType>>(
+            true_distribution));
+
+auto diagnostics = Diagnostics<ParameterType, HyperparameterType>(problem_def);
+```
+
+Afterwards, you can specify which of our methods you would like to test by passing a list of **ProblemRun** instances to the **Diagnostics** class. For example, to test the AG method, use:
+
+```cpp
+run = std::shared_ptr<
+    ProblemRun<ParameterType, HyperparameterType>>(
+        new AugmentationRun<ParameterType, HyperparameterType>(
+            problem_def.get());
+
+run->numberSubRuns = numSubRuns;
+run->samplesPerSubRun = samplesPerSubRun;
+diagnostics.addRun(run);
+
+diagnostics.run(threadCount);
+```
+You can then print the results with:
+```cpp
+diagnostics.printResults();
+```
+or create a LaTeX table of the results with:
+```cpp
+diagnostics.printLatexTable();
+```
+
+All of the provided testbeds are implemented using this framework, so see the source code for more guidance.
+
+# Graph Laplacians
+
+We include the two graphs that we used in our paper for the graph Laplacian examples. They are located in **Graphs/**. These graphs were taken from the [Network Repository](http://networkrepository.com). Below is a rendering of the **fb-pages-food** graph:
+
+![fb-pages-food](images/fb-pages-food.png)
