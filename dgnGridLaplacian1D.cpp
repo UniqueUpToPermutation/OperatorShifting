@@ -62,7 +62,7 @@ void perturbBackground1D(const Eigen::VectorXd& a, const PerturbType perturbType
             auto beta = std_dev * std_dev;
             std::gamma_distribution<double> gammaDist(alpha, beta);
             *output = Eigen::VectorXd::Zero(n);
-            for (int i = 0; i < n; ++i)
+            for (size_t i = 0; i < n; ++i)
                 (*output)(i) = a(i) * gammaDist(dgnGridLap1DRnd);
             break;
         }

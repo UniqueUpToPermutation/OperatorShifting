@@ -82,15 +82,17 @@ namespace aug {
         MatrixParameterDistribution(ParameterType &parameters,
                 HyperparameterType &hyperparameters,
                 bool bIsDualDistribution) :
+                bIsDualDistribution(bIsDualDistribution),
                 parameters(parameters),
-                hyperparameters(hyperparameters),
-                bIsDualDistribution(bIsDualDistribution) {}
+                hyperparameters(hyperparameters) {
+        }
 
         MatrixParameterDistribution(ParameterType &parameters,
                                     HyperparameterType &hyperparameters) :
+                bIsDualDistribution(false),
                 parameters(parameters),
-                hyperparameters(hyperparameters),
-                bIsDualDistribution(false) {}
+                hyperparameters(hyperparameters) {
+        }
 
         virtual void drawParameters(ParameterType *output) const = 0;
 
@@ -276,9 +278,9 @@ namespace aug {
         typedef MatrixParameterDistribution<ParameterType, HyperparameterType> DistributionType;
         typedef ProblemDefinition<ParameterType, HyperparameterType> ParentType;
 
-        std::shared_ptr<IMatrixOperator> op_C;
-        TruncationWindowType windowType;
         size_t order;
+        TruncationWindowType windowType;
+        std::shared_ptr<IMatrixOperator> op_C;
 
         std::string buildName() const {
             std::ostringstream os;
@@ -350,10 +352,10 @@ namespace aug {
         typedef MatrixParameterDistribution<ParameterType, HyperparameterType> DistributionType;
         typedef ProblemDefinition<ParameterType, HyperparameterType> ParentType;
 
-        std::shared_ptr<IMatrixOperator> op_C;
+        int order;
         TruncationWindowType windowType;
         double eps;
-        int order;
+        std::shared_ptr<IMatrixOperator> op_C;
 
         std::string buildName() const {
             std::ostringstream os;
@@ -428,8 +430,9 @@ namespace aug {
         typedef ProblemRun<ParameterType, HyperparameterType> ProblemRunType;
 
         std::string name;
-        ProblemRunType* run;
         Eigen::MatrixXd rawErrData;
+        ProblemRunType* run;
+
         Eigen::VectorXd meanErrs;
         Eigen::VectorXd stdErrs;
         Eigen::VectorXd meanSolNorms;
@@ -451,7 +454,7 @@ namespace aug {
         }
 
         void print() const {
-            for (int i = 0; i < run->norms.size(); ++i) {
+            for (size_t i = 0; i < run->norms.size(); ++i) {
                 std::cout << name << ": " << run->norms[i]->getName() << ": " << std::setprecision(4) <<
                           meanErrs[i] << " +- " << std::setprecision(4) << 2.0 * stdErrs[i] << std::endl;
                 std::cout << name << ": " << run->norms[i]->getName() << " (Relative): " << std::setprecision(4) <<
@@ -482,7 +485,7 @@ namespace aug {
                     break;
             }
 
-            for (int i = 0; i < run->norms.size(); ++i) {
+            for (size_t i = 0; i < run->norms.size(); ++i) {
                 std::cout << "& $" << std::setprecision(3) << relativeErrs[i] * 100.0 <<
                 "\\%$ & $\\pm " << std::setprecision(3) << 2.0 * relativeStdErrs[i] * 100.0 << "\\%$ ";
             }
@@ -584,7 +587,7 @@ namespace aug {
                             Eigen::VectorXd augResult;
                             run_ptr->subRun(bootstrap_distribution, b, &augResult);
 
-                            for (int i_norm = 0; i_norm < run_ptr->norms.size(); ++i_norm) {
+                            for (size_t i_norm = 0; i_norm < run_ptr->norms.size(); ++i_norm) {
                                 IVectorNorm* current_norm = run_ptr->norms[i_norm];
                                 Eigen::VectorXd diff = augResult - trueSolution;
                                 thread_errs(i_norm, index) = (*current_norm)(diff);
@@ -650,8 +653,9 @@ namespace aug {
         void printLatexTable() const {
             std::cout << std::endl;
             std::cout << "\\begin{tabular}{r|cc";
-            for (auto& norm : problemRuns[0]->norms)
+            for (size_t i = 0; i < problemRuns[0]->norms.size(); ++i) {
                 std::cout << "ll";
+            }
             std::cout << "}" << std::endl;
 
             std::cout << "Method & Order & Window ";
