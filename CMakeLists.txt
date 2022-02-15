@@ -28,10 +28,16 @@ set(OPSHIFT_LIBRARIES Eigen3::Eigen Threads::Threads)
 set(OPSHIFT_TEST_OUTPUT_DIR
         ${CMAKE_CURRENT_BINARY_DIR})
 
+add_library(Opshift ${OPSHIFT_SRC})
+target_include_directories(Opshift PUBLIC ${OPSHIFT_INCLUDE_DIR})
+target_link_libraries(Opshift PUBLIC ${OPSHIFT_LIBRARIES})
+
 function(CreateTest TARGET_NAME TEST_SRC)
-        add_executable(${TARGET_NAME} ${OPSHIFT_SRC} ${TEST_SRC})
+        add_executable(${TARGET_NAME} ${TEST_SRC})
         target_include_directories(${TARGET_NAME} PUBLIC ${OPSHIFT_INCLUDE_DIR})
-        target_link_libraries(${TARGET_NAME} PUBLIC ${OPSHIFT_LIBRARIES})
+        target_link_libraries(${TARGET_NAME} PUBLIC 
+                ${OPSHIFT_LIBRARIES}
+                Opshift)
         SET_TARGET_PROPERTIES(${TARGET_NAME} PROPERTIES
                 RUNTIME_OUTPUT_DIRECTORY ${OPSHIFT_TEST_OUTPUT_DIR}
         )
