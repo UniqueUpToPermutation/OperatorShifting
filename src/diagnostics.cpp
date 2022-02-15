@@ -1,6 +1,6 @@
-#include "diagnostics.h"
+#include <opshift/diagnostics.h>
 
-namespace aug {
+namespace opshift {
     void ProgressBar(double percentage, size_t numCharacters, std::string* output) {
         std::stringstream os;
         os << '[';

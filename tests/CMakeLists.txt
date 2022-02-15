@@ -1,0 +1,5 @@
+add_subdirectory(asymMarkov)
+add_subdirectory(graphEdgeDrop)
+add_subdirectory(graphEdgePerturb)
+add_subdirectory(gridLaplacian1D)
+add_subdirectory(gridLaplacian2D)

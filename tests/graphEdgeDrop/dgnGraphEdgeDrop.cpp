@@ -1,14 +1,14 @@
-#include "diagnostics.h"
-#include "augmentation.h"
-#include "graphlap.h"
-#include "matutil.h"
-#include "testbeds.h"
+#include <opshift/diagnostics.h>
+#include <opshift/opshift.h>
+#include <opshift/graphlap.h>
+#include <opshift/matutil.h>
+#include <opshift/tests.h>
 
 #include <random>
 #include <set>
 #include <cstring>
 
-using namespace aug;
+using namespace opshift;
 using namespace lemon;
 
 #define DEFAULT_P 0.75
@@ -211,4 +211,9 @@ void dgnGraphEdgeDrop(int argc, char** argv) {
     diagnostics.run(threadCount);
     diagnostics.printResults();
     diagnostics.printLatexTable();
+}
+
+int main(int argc, char *argv[]) {
+    loadConfig();
+    dgnGraphEdgeDrop(argc - 1, &argv[1]);
 }

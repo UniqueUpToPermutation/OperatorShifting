@@ -1,7 +1,5 @@
 // Augmentation for systems of the form Ahat x = b
-
-#ifndef OPERATORAUGMENTATION_AUGMENTATION_H_
-#define OPERATORAUGMENTATION_AUGMENTATION_H_
+#pragma once
 
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
@@ -14,7 +12,7 @@
 #include <memory>
 #include <functional>
 
-namespace aug {
+namespace opshift {
 
     Eigen::VectorXd randomNormal(size_t dimension);
 
@@ -113,10 +111,7 @@ namespace aug {
     class IMatrixDistribution
     {
     public:
-        virtual void drawSample(std::shared_ptr<IInvertibleMatrixOperator>* Ahat) const = 0;
-        virtual void drawDualSample(std::shared_ptr<IInvertibleMatrixOperator>* Ahat,
-                            std::shared_ptr<IMatrixOperator>* Mhat) const;
-        virtual bool isDualDistribution() const;
+        virtual std::shared_ptr<IInvertibleMatrixOperator> drawSample() const = 0;
         virtual bool isSPD() const = 0;
     };
 
@@ -140,8 +135,8 @@ namespace aug {
     double softShiftedWindowFuncDenominator(int N, int k, double alpha);
     double hardShiftedWindowFuncDenominator(int N, int k, double alpha);
 
-    // Compute the standard augmentation factor
-    double augFac(int num_system_samples,
+    // Compute the standard shift factor
+    double shiftFactor(int num_system_samples,
                      int num_per_system_samples,
                      int dimension,
                      IInvertibleMatrixOperator* op_Ahat,
@@ -150,8 +145,8 @@ namespace aug {
                      const IMatrixOperator* op_R,
                      const IMatrixOperator* op_B);
 
-    // Perform standard operator augmentation
-    void aug(int num_system_samples,
+    // Perform standard operator shifting
+    void opshift(int num_system_samples,
                 int num_per_system_samples,
                 const Eigen::VectorXd& rhs,
                 IInvertibleMatrixOperator* op_Ahat,
@@ -161,15 +156,15 @@ namespace aug {
                 const IMatrixOperator* op_B,
                 Eigen::VectorXd* output);
 
-    void aug(int num_system_samples,
+    void opshift(int num_system_samples,
                 int num_per_system_samples,
                 const Eigen::VectorXd& rhs,
                 IInvertibleMatrixOperator* op_Ahat,
                 const IMatrixDistribution* bootstrap_mat_dist,
                 Eigen::VectorXd* output);
 
-    // Apply standard operator augmentation given augmentation factor
-    void preAug(double beta,
+    // Apply standard operator shift given estimated optimal shift factor
+    void applyOpshift(double beta,
                    const Eigen::VectorXd& rhs,
                    IInvertibleMatrixOperator* op_Ahat,
                    const IMatrixOperator* op_R,
@@ -177,7 +172,7 @@ namespace aug {
                    Eigen::VectorXd* output);
 
     // Compute the energy-norm augmentation factor
-    double enAugFac(int num_system_samples,
+    double energyShiftFactor(int num_system_samples,
             int num_per_system_samples,
             int dimension,
             IInvertibleMatrixOperator* op_Ahat,
@@ -185,7 +180,7 @@ namespace aug {
             const IVectorDistribution* q_dist);
 
     // Perform energy-norm augmentation
-    void enAug(int num_system_samples,
+    void energyOpshift(int num_system_samples,
                int num_per_system_samples,
                const Eigen::VectorXd& rhs,
                IInvertibleMatrixOperator* op_Ahat,
@@ -194,7 +189,7 @@ namespace aug {
                const IMatrixOperator* op_C,
                Eigen::VectorXd* output);
 
-    void enAug(int num_system_samples,
+    void energyOpshift(int num_system_samples,
                int num_per_system_samples,
                const Eigen::VectorXd& rhs,
                IInvertibleMatrixOperator* op_Ahat,
@@ -202,14 +197,14 @@ namespace aug {
                Eigen::VectorXd* output);
 
     // Apply energy-norm operator augmentation given augmentation factor
-    void preEnAug(double beta,
+    void applyEnergyOpshift(double beta,
                   const Eigen::VectorXd& rhs,
                   IInvertibleMatrixOperator* op_Ahat,
                   const IMatrixOperator* op_C,
                   Eigen::VectorXd* output);
 
     // Compute the augmentation factor for truncated energy-norm augmentation
-    double enAugTruncFac(int num_system_samples,
+    double energyShiftFactorTruncated(int num_system_samples,
                         int num_per_system_samples,
                         int dimension,
                         int order,
@@ -220,7 +215,7 @@ namespace aug {
                         std::function<double(int, int)>& window_func_denominator);
 
     // Perform truncated energy-norm augmentation
-    void enAugTrunc(int num_system_samples,
+    void energyOpshiftTruncated(int num_system_samples,
                     int num_per_system_samples,
                     const Eigen::VectorXd& rhs,
                     int order,
@@ -232,7 +227,7 @@ namespace aug {
                     std::function<double(int, int)>& window_func_denominator,
                     Eigen::VectorXd* output);
 
-    void enAugTrunc(int num_system_samples,
+    void energyOpshiftTruncated(int num_system_samples,
                     int num_per_system_samples,
                     const Eigen::VectorXd& rhs,
                     int order,
@@ -242,7 +237,7 @@ namespace aug {
                     const IMatrixOperator* op_C,
                     Eigen::VectorXd* output);
 
-    void enAugTrunc(int num_system_samples,
+    void energyOpshiftTruncated(int num_system_samples,
                     int num_per_system_samples,
                     const Eigen::VectorXd& rhs,
                     int order,
@@ -250,7 +245,7 @@ namespace aug {
                     const IMatrixDistribution* bootstrap_mat_dist,
                     Eigen::VectorXd* output);
 
-    void enAugTrunc(int num_system_samples,
+    void energyOpshiftTruncated(int num_system_samples,
                     int num_per_system_samples,
                     const Eigen::VectorXd& rhs,
                     int order,
@@ -260,8 +255,8 @@ namespace aug {
                     std::function<double(int, int)>& window_func_denominator,
                     Eigen::VectorXd* output);
 
-    // Compute the augmentation factor for shifted truncated energy-norm augmentation
-    double enAugShiftTruncFac(int num_system_samples,
+    // Compute the augmentation factor for rebased truncated energy-norm shifting
+    double energyShiftFactorTruncatedRebased(int num_system_samples,
                          int num_per_system_samples,
                          int dimension,
                          int order,
@@ -273,7 +268,7 @@ namespace aug {
                          std::function<double(int, int, double)>& window_func_denominator);
 
     // Perform shifted truncated energy-norm operator augmentation
-    void enAugShiftTrunc(int num_system_samples,
+    void energyOpshiftTruncatedRebased(int num_system_samples,
                     int num_per_system_samples,
                     const Eigen::VectorXd& rhs,
                     int order,
@@ -286,7 +281,7 @@ namespace aug {
                     std::function<double(int, int, double)>& window_func_denominator,
                     Eigen::VectorXd* output);
 
-    void enAugShiftTrunc(int num_system_samples,
+    void energyOpshiftTruncatedRebased(int num_system_samples,
                          int num_per_system_samples,
                          const Eigen::VectorXd& rhs,
                          int order,
@@ -297,7 +292,7 @@ namespace aug {
                          const IMatrixOperator* op_C,
                          Eigen::VectorXd* output);
 
-    void enAugShiftTrunc(int num_system_samples,
+    void energyOpshiftTruncatedRebased(int num_system_samples,
                          int num_per_system_samples,
                          const Eigen::VectorXd& rhs,
                          int order,
@@ -306,7 +301,7 @@ namespace aug {
                          const IMatrixDistribution* bootstrap_mat_dist,
                          Eigen::VectorXd* output);
 
-    void enAugShiftTrunc(int num_system_samples,
+    void energyOpshiftTruncatedRebased(int num_system_samples,
                          int num_per_system_samples,
                          const Eigen::VectorXd& rhs,
                          int order,
@@ -318,7 +313,7 @@ namespace aug {
                          Eigen::VectorXd* output);
 
     // Compute the augmentation factor for accelerated shifted truncated energy-norm augmentation
-    double enAugAccelShiftTruncFac(int num_system_samples,
+    double energyShiftFactorTruncatedRebasedAccel(int num_system_samples,
                                     int num_per_system_samples,
                                     int dimension,
                                     int order,
@@ -330,7 +325,7 @@ namespace aug {
                                     std::function<double(int, int, double)>& window_func_denominator);
 
     // Perform shifted accelerated truncated energy-norm operator augmentation
-    void enAugAccelShiftTrunc(int num_system_samples,
+    void energyOpshiftTruncatedRebasedAccel(int num_system_samples,
                               int num_per_system_samples,
                               const Eigen::VectorXd& rhs,
                               int order,
@@ -343,7 +338,7 @@ namespace aug {
                               std::function<double(int, int, double)>& window_func_denominator,
                               Eigen::VectorXd* output);
 
-    void enAugAccelShiftTrunc(int num_system_samples,
+    void energyOpshiftTruncatedRebasedAccel(int num_system_samples,
                               int num_per_system_samples,
                               const Eigen::VectorXd& rhs,
                               int order,
@@ -354,7 +349,7 @@ namespace aug {
                               const IMatrixOperator* op_C,
                               Eigen::VectorXd* output);
 
-    void enAugAccelShiftTrunc(int num_system_samples,
+    void energyOpshiftTruncatedRebasedAccel(int num_system_samples,
                               int num_per_system_samples,
                               const Eigen::VectorXd& rhs,
                               int order,
@@ -363,7 +358,7 @@ namespace aug {
                               const IMatrixDistribution* bootstrap_mat_dist,
                               Eigen::VectorXd* output);
 
-    void enAugAccelShiftTrunc(int num_system_samples,
+    void energyOpshiftTruncatedRebasedAccel(int num_system_samples,
                               int num_per_system_samples,
                               const Eigen::VectorXd& rhs,
                               int order,
@@ -374,10 +369,8 @@ namespace aug {
                               std::function<double(int, int, double)>& window_func_denominator,
                               Eigen::VectorXd* output);
 
-    // Compute the shift factor alpha via the power method
-    double computeShift(const IMatrixOperator* Ahat_bootstrap,
+    // Compute the rebase factor alpha via the power method
+    double computeRebaseFactor(const IMatrixOperator* Ahat_bootstrap,
             const IInvertibleMatrixOperator* Ahat, double eps, int dimension);
 
 }
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef OPERATORAUGMENTATION_GRAPHLAP_H
-#define OPERATORAUGMENTATION_GRAPHLAP_H
+#pragma once
 
 #include <string>
 #include <lemon/list_graph.h>
@@ -19,5 +18,3 @@ void markovGenerator(const lemon::ListDigraph* graph,
                      const lemon::ListDigraph::ArcMap<double>* probabilities,
                      Eigen::SparseMatrix<double>* output,
                      double discountFactor);
-
-#endif

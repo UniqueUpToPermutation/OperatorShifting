@@ -1,8 +1,8 @@
-#include "diagnostics.h"
-#include "augmentation.h"
-#include "graphlap.h"
-#include "matutil.h"
-#include "testbeds.h"
+#include <opshift/diagnostics.h>
+#include <opshift/opshift.h>
+#include <opshift/graphlap.h>
+#include <opshift/matutil.h>
+#include <opshift/tests.h>
 
 #include <random>
 #include <set>
@@ -18,7 +18,7 @@
 #define DEFAULT_NUM_SUB_RUNS 100
 #define SAMPLES_PER_SUB_RUN 100
 
-using namespace aug;
+using namespace opshift;
 using namespace lemon;
 
 std::default_random_engine dgnEdgePeturbRnd(std::chrono::system_clock::now().time_since_epoch().count());
@@ -253,4 +253,9 @@ void dgnGraphEdgePerturb(int argc, char** argv) {
     diagnostics.run(threadCount);
     diagnostics.printResults();
     diagnostics.printLatexTable();
+}
+
+int main(int argc, char *argv[]) {
+    loadConfig();
+    dgnGraphEdgePerturb(argc - 1, &argv[1]);
 }

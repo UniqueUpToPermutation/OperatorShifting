@@ -1,0 +1,1 @@
+CreateTest(GraphEdgeDrop dgnGraphEdgeDrop.cpp)

@@ -1,11 +1,10 @@
-#include "diagnostics.h"
-#include "augmentation.h"
-#include "testbeds.h"
+#include <opshift/diagnostics.h>
+#include <opshift/tests.h>
 
 #include <random>
 #include <cstring>
 
-using namespace aug;
+using namespace opshift;
 
 #define DEFAULT_N 128
 #define DEFAULT_STD_DEV 0.5
@@ -243,4 +242,9 @@ void dgnGridLaplacian1D(int argc, char** argv) {
     diagnostics.run(threadCount);
     diagnostics.printResults();
     diagnostics.printLatexTable();
+}
+
+int main(int argc, char *argv[]) {
+    loadConfig();
+    dgnGridLaplacian1D(argc - 1, &argv[1]);
 }

@@ -1,0 +1,1 @@
+CreateTest(AsymMarkov dgnAsymMarkov.cpp)

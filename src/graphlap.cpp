@@ -1,4 +1,4 @@
-#include "graphlap.h"
+#include <opshift/graphlap.h>
 
 #include <iostream>
 #include <string>

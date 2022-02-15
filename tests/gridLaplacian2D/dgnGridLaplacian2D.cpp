@@ -1,6 +1,6 @@
-#include "augmentation.h"
-#include "diagnostics.h"
-#include "testbeds.h"
+#include <opshift/opshift.h>
+#include <opshift/diagnostics.h>
+#include <opshift/tests.h>
 
 #include <random>
 #include <cstring>
@@ -14,7 +14,7 @@
 #define DEFAULT_NUM_SUB_RUNS 100
 #define SAMPLES_PER_SUB_RUN 100
 
-using namespace aug;
+using namespace opshift;
 
 std::default_random_engine dgnGridLap2DRnd(std::chrono::system_clock::now().time_since_epoch().count());
 
@@ -292,4 +292,9 @@ void dgnGridLaplacian2D(int argc, char** argv) {
     diagnostics.run(threadCount);
     diagnostics.printResults();
     diagnostics.printLatexTable();
+}
+
+int main(int argc, char *argv[]) {
+    loadConfig();
+    dgnGridLaplacian2D(argc - 1, &argv[1]);
 }

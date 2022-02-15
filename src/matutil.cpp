@@ -1,4 +1,4 @@
-#include "matutil.h"
+#include <opshift/matutil.h>
 
 void createSlicingMatrix(const int cols, const std::vector<int>& indices, Eigen::SparseMatrix<double>* out) {
     out->resize(indices.size(), cols);

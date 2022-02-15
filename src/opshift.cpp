@@ -1,6 +1,6 @@
-#include "augmentation.h"
+#include <opshift/opshift.h>
 
-namespace aug {
+namespace opshift {
     Eigen::VectorXd randomNormal(size_t dimension) {
         auto U1 = 0.5 * (Eigen::VectorXd::Random(dimension).array() + 1.0);
         auto U2 = 0.5 * (Eigen::VectorXd::Random(dimension).array() + 1.0);
@@ -101,16 +101,6 @@ namespace aug {
         Eigen::SparseMatrix<double>& sparse_mat) : sparse_mat(sparse_mat) {
     }
 
-    void IMatrixDistribution::drawDualSample(std::shared_ptr<IInvertibleMatrixOperator> *Ahat,
-                                             std::shared_ptr<IMatrixOperator> *Mhat) const {
-        drawSample(Ahat);
-        *Mhat = std::shared_ptr<IMatrixOperator>(new IdentityMatrixSample());
-    }
-
-    bool IMatrixDistribution::isDualDistribution() const {
-        return false;
-    }
-
     void IdentityMatrixSample::preprocess() {
     }
 
@@ -189,7 +179,7 @@ namespace aug {
             return 0;
     }
 
-    double augFac(int num_system_samples,
+    double shiftFactor(int num_system_samples,
                      int num_per_system_samples,
                      int dimension,
                      IInvertibleMatrixOperator *op_Ahat,
@@ -228,7 +218,7 @@ namespace aug {
 
         for (int i_system = 0; i_system < num_system_samples; ++i_system) {
             std::shared_ptr<IInvertibleMatrixOperator> op_Ahat_bootstrap;
-            bootstrap_mat_dist->drawSample(&op_Ahat_bootstrap);
+            op_Ahat_bootstrap = bootstrap_mat_dist->drawSample();
             op_Ahat_bootstrap->preprocess();
 
             for (int i_rhs = 0; i_rhs < num_per_system_samples; ++i_rhs) {
@@ -263,7 +253,7 @@ namespace aug {
         return std::max(numerator / denominator, 0.0);
     }
 
-    void aug(int num_system_samples,
+    void opshift(int num_system_samples,
              int num_per_system_samples,
              const Eigen::VectorXd& rhs,
              IInvertibleMatrixOperator* op_Ahat,
@@ -273,10 +263,7 @@ namespace aug {
              const IMatrixOperator* op_B,
              Eigen::VectorXd* output) {
 
-        if (bootstrap_mat_dist->isDualDistribution())
-            throw "aug does not support dual distributions!";
-
-        double beta = augFac(num_system_samples,
+        double beta = shiftFactor(num_system_samples,
                                 num_per_system_samples,
                                 rhs.size(),
                                 op_Ahat,
@@ -285,21 +272,21 @@ namespace aug {
                                 op_R,
                                 op_B);
 
-        preAug(beta, rhs, op_Ahat, op_R, op_B, output);
+        applyOpshift(beta, rhs, op_Ahat, op_R, op_B, output);
     }
 
-    void aug(int num_system_samples,
+    void opshift(int num_system_samples,
                 int num_per_system_samples,
                 const Eigen::VectorXd &rhs,
                 IInvertibleMatrixOperator *op_Ahat,
                 const IMatrixDistribution *bootstrap_mat_dist,
                 Eigen::VectorXd *output) {
-        aug(num_system_samples, num_per_system_samples,
+        opshift(num_system_samples, num_per_system_samples,
                rhs, op_Ahat, bootstrap_mat_dist,
                nullptr, nullptr, nullptr, output);
     }
 
-    void preAug(double beta,
+    void applyOpshift(double beta,
                    const Eigen::VectorXd &rhs,
                    IInvertibleMatrixOperator *op_Ahat,
                    const IMatrixOperator *op_R,
@@ -326,7 +313,7 @@ namespace aug {
         *output = xhat - beta * augmentationVec;
     }
 
-    double enAugFac(int num_system_samples,
+    double energyShiftFactor(int num_system_samples,
                     int num_per_system_samples,
                     int dimension,
                     IInvertibleMatrixOperator *op_Ahat,
@@ -345,8 +332,7 @@ namespace aug {
 
         for (int i_system = 0; i_system < num_system_samples; ++i_system) {
             std::shared_ptr<IInvertibleMatrixOperator> op_Ahat_bootstrap;
-            std::shared_ptr<IMatrixOperator> op_Mhat_bootstrap;
-            bootstrap_mat_dist->drawSample(&op_Ahat_bootstrap);
+            op_Ahat_bootstrap = bootstrap_mat_dist->drawSample();
             op_Ahat_bootstrap->preprocess();
 
             for (int i_rhs = 0; i_rhs < num_per_system_samples; ++i_rhs) {
@@ -368,7 +354,7 @@ namespace aug {
         return std::max(numerator / denominator, 0.0);
     }
 
-    void enAug(int num_system_samples,
+    void energyOpshift(int num_system_samples,
                int num_per_system_samples,
                const Eigen::VectorXd &rhs,
                IInvertibleMatrixOperator *op_Ahat,
@@ -377,31 +363,28 @@ namespace aug {
                const IMatrixOperator *op_C,
                Eigen::VectorXd *output) {
 
-        if (bootstrap_mat_dist->isDualDistribution())
-            throw "enAug does not support dual distributions!";
-
-        double beta = enAugFac(num_system_samples,
+        double beta = energyShiftFactor(num_system_samples,
                                num_per_system_samples,
                                rhs.size(),
                                op_Ahat,
                                bootstrap_mat_dist,
                                q_dist);
 
-        preEnAug(beta, rhs, op_Ahat, op_C, output);
+        applyEnergyOpshift(beta, rhs, op_Ahat, op_C, output);
     }
 
-    void enAug(int num_system_samples,
+    void energyOpshift(int num_system_samples,
                int num_per_system_samples,
                const Eigen::VectorXd &rhs,
                IInvertibleMatrixOperator *op_Ahat,
                const IMatrixDistribution *bootstrap_mat_dist,
                Eigen::VectorXd *output) {
-        enAug(num_system_samples, num_per_system_samples, rhs, op_Ahat,
+        energyOpshift(num_system_samples, num_per_system_samples, rhs, op_Ahat,
               bootstrap_mat_dist, nullptr, nullptr, output);
     }
 
     // Apply energy-norm operator augmentation given augmentation factor
-    void preEnAug(double beta,
+    void applyEnergyOpshift(double beta,
                   const Eigen::VectorXd &rhs,
                   IInvertibleMatrixOperator *op_Ahat,
                   const IMatrixOperator *op_C,
@@ -422,7 +405,7 @@ namespace aug {
     }
 
     // Compute the augmentation factor for truncated energy-norm augmentation
-    double enAugTruncFac(int num_system_samples,
+    double energyShiftFactorTruncated(int num_system_samples,
                          int num_per_system_samples,
                          int dimension,
                          int order,
@@ -447,7 +430,7 @@ namespace aug {
 
         for (int i_system = 0; i_system < num_system_samples; ++i_system) {
             std::shared_ptr<IInvertibleMatrixOperator> op_Ahat_bootstrap;
-            bootstrap_mat_dist->drawSample(&op_Ahat_bootstrap);
+            op_Ahat_bootstrap = bootstrap_mat_dist->drawSample();
             op_Ahat_bootstrap->preprocess();
 
             for (int i_rhs = 0; i_rhs < num_per_system_samples; ++i_rhs) {
@@ -485,7 +468,7 @@ namespace aug {
         return std::max(numerator / denominator, 0.0);
     }
 
-    void enAugTrunc(int num_system_samples,
+    void energyOpshiftTruncated(int num_system_samples,
                     int num_per_system_samples,
                     const Eigen::VectorXd &rhs,
                     int order,
@@ -496,7 +479,7 @@ namespace aug {
                     std::function<double(int, int)> &window_func_numerator,
                     std::function<double(int, int)> &window_func_denominator,
                     Eigen::VectorXd *output) {
-        double beta = enAugTruncFac(num_system_samples,
+        double beta = energyShiftFactorTruncated(num_system_samples,
                                     num_per_system_samples,
                                     rhs.size(),
                                     order,
@@ -506,13 +489,10 @@ namespace aug {
                                     window_func_numerator,
                                     window_func_denominator);
 
-        if (bootstrap_mat_dist->isDualDistribution())
-            throw "enAugTrunc does not support dual distributions!";
-
-        preEnAug(beta, rhs, op_Ahat, op_C, output);
+        applyEnergyOpshift(beta, rhs, op_Ahat, op_C, output);
     }
 
-    void enAugTrunc(int num_system_samples,
+    void energyOpshiftTruncated(int num_system_samples,
                     int num_per_system_samples,
                     const Eigen::VectorXd &rhs,
                     int order,
@@ -524,24 +504,24 @@ namespace aug {
         std::function<double(int, int)> window_func_numerator = &softWindowFuncNumerator;
         std::function<double(int, int)> window_func_denominator = &softWindowFuncDenominator;
 
-        enAugTrunc(num_system_samples, num_per_system_samples,
+        energyOpshiftTruncated(num_system_samples, num_per_system_samples,
                    rhs, order, op_Ahat, bootstrap_mat_dist, q_dist,
                    op_C, window_func_numerator, window_func_denominator, output);
     }
 
-    void enAugTrunc(int num_system_samples,
+    void energyOpshiftTruncated(int num_system_samples,
                     int num_per_system_samples,
                     const Eigen::VectorXd &rhs,
                     int order,
                     IInvertibleMatrixOperator *op_Ahat,
                     const IMatrixDistribution *bootstrap_mat_dist,
                     Eigen::VectorXd *output) {
-        enAugTrunc(num_system_samples, num_per_system_samples,
+        energyOpshiftTruncated(num_system_samples, num_per_system_samples,
                    rhs, order, op_Ahat, bootstrap_mat_dist, nullptr,
                    nullptr, output);
     }
 
-    void enAugTrunc(int num_system_samples,
+    void energyOpshiftTruncated(int num_system_samples,
                     int num_per_system_samples,
                     const Eigen::VectorXd &rhs,
                     int order,
@@ -550,7 +530,7 @@ namespace aug {
                     std::function<double(int, int)> &window_func_numerator,
                     std::function<double(int, int)> &window_func_denominator,
                     Eigen::VectorXd *output) {
-        enAugTrunc(num_system_samples, num_per_system_samples,
+        energyOpshiftTruncated(num_system_samples, num_per_system_samples,
                    rhs, order, op_Ahat, bootstrap_mat_dist, nullptr,
                    nullptr, window_func_numerator, window_func_denominator, output);
     }
@@ -575,7 +555,7 @@ namespace aug {
         *output = xhat - beta * augmentationVec;
     }
 
-    double enAugShiftTruncFac(int num_system_samples,
+    double energyShiftFactorTruncatedRebased(int num_system_samples,
                               int num_per_system_samples,
                               int dimension,
                               int order,
@@ -601,7 +581,7 @@ namespace aug {
 
         for (int i_system = 0; i_system < num_system_samples; ++i_system) {
             std::shared_ptr<IInvertibleMatrixOperator> op_Ahat_bootstrap;
-            bootstrap_mat_dist->drawSample(&op_Ahat_bootstrap);
+            op_Ahat_bootstrap = bootstrap_mat_dist->drawSample();
             op_Ahat_bootstrap->preprocess();
 
             for (int i_rhs = 0; i_rhs < num_per_system_samples; ++i_rhs) {
@@ -640,7 +620,7 @@ namespace aug {
     }
 
     // Perform shifted truncated energy-norm operator augmentation
-    void enAugShiftTrunc(int num_system_samples,
+    void energyOpshiftTruncatedRebased(int num_system_samples,
                          int num_per_system_samples,
                          const Eigen::VectorXd &rhs,
                          int order,
@@ -653,10 +633,7 @@ namespace aug {
                          std::function<double(int, int, double)> &window_func_denominator,
                          Eigen::VectorXd *output) {
 
-        if (bootstrap_mat_dist->isDualDistribution())
-            throw "enAugShiftTrunc does not support dual distributions!";
-
-        double beta = enAugShiftTruncFac(num_system_samples,
+        double beta = energyShiftFactorTruncatedRebased(num_system_samples,
                                          num_per_system_samples,
                                          rhs.size(),
                                          order,
@@ -667,10 +644,10 @@ namespace aug {
                                          window_func_numerator,
                                          window_func_denominator);
 
-        preEnAug(beta, rhs, op_Ahat, op_C, output);
+        applyEnergyOpshift(beta, rhs, op_Ahat, op_C, output);
     }
 
-    void enAugShiftTrunc(int num_system_samples,
+    void energyOpshiftTruncatedRebased(int num_system_samples,
                          int num_per_system_samples,
                          const Eigen::VectorXd &rhs,
                          int order,
@@ -683,12 +660,12 @@ namespace aug {
         std::function<double(int, int, double)> window_func_numerator = &softShiftedWindowFuncNumerator;
         std::function<double(int, int, double)> window_func_denominator = &softShiftedWindowFuncDenominator;
 
-        enAugShiftTrunc(num_system_samples, num_per_system_samples,
+        energyOpshiftTruncatedRebased(num_system_samples, num_per_system_samples,
                         rhs, order, alpha, op_Ahat, bootstrap_mat_dist, q_dist, op_C,
                         window_func_numerator, window_func_denominator, output);
     }
 
-    void enAugShiftTrunc(int num_system_samples,
+    void energyOpshiftTruncatedRebased(int num_system_samples,
                          int num_per_system_samples,
                          const Eigen::VectorXd &rhs,
                          int order,
@@ -696,11 +673,11 @@ namespace aug {
                          IInvertibleMatrixOperator *op_Ahat,
                          const IMatrixDistribution *bootstrap_mat_dist,
                          Eigen::VectorXd *output) {
-        enAugShiftTrunc(num_system_samples, num_per_system_samples,
+        energyOpshiftTruncatedRebased(num_system_samples, num_per_system_samples,
                         rhs, order, alpha, op_Ahat, bootstrap_mat_dist, nullptr, nullptr, output);
     }
 
-    void enAugShiftTrunc(int num_system_samples,
+    void energyOpshiftTruncatedRebased(int num_system_samples,
                          int num_per_system_samples,
                          const Eigen::VectorXd &rhs,
                          int order,
@@ -710,13 +687,13 @@ namespace aug {
                          std::function<double(int, int, double)> &window_func_numerator,
                          std::function<double(int, int, double)> &window_func_denominator,
                          Eigen::VectorXd *output) {
-        enAugShiftTrunc(num_system_samples, num_per_system_samples,
+        energyOpshiftTruncatedRebased(num_system_samples, num_per_system_samples,
                         rhs, order, alpha, op_Ahat, bootstrap_mat_dist, nullptr, nullptr,
                         window_func_numerator, window_func_denominator, output);
     }
 
     // Compute the shift factor alpha via the power method
-    double computeShift(const IMatrixOperator *Ahat_bootstrap,
+    double computeRebaseFactor(const IMatrixOperator *Ahat_bootstrap,
                         const IInvertibleMatrixOperator *Ahat, double eps, int dimension) {
         Eigen::VectorXd v_last = Eigen::VectorXd::Random(dimension);
         Eigen::VectorXd a_inv_v_last;
@@ -750,7 +727,7 @@ namespace aug {
     }
 
     // Compute the augmentation factor for accelerated shifted truncated energy-norm augmentation
-    double enAugAccelShiftTruncFac(int num_system_samples,
+    double energyShiftFactorTruncatedRebasedAccel(int num_system_samples,
                                    int num_per_system_samples,
                                    int dimension,
                                    int order,
@@ -776,10 +753,10 @@ namespace aug {
 
         for (int i_system = 0; i_system < num_system_samples; ++i_system) {
             std::shared_ptr<IInvertibleMatrixOperator> op_Ahat_bootstrap;
-            bootstrap_mat_dist->drawSample(&op_Ahat_bootstrap);
+            op_Ahat_bootstrap = bootstrap_mat_dist->drawSample();
             op_Ahat_bootstrap->preprocess();
 
-            double alpha = computeShift(op_Ahat_bootstrap.get(), op_Ahat, eps, dimension);
+            double alpha = computeRebaseFactor(op_Ahat_bootstrap.get(), op_Ahat, eps, dimension);
 
             for (int i_rhs = 0; i_rhs < num_per_system_samples; ++i_rhs) {
                 pows_q.clear();
@@ -818,7 +795,7 @@ namespace aug {
     }
 
     // Perform shifted accelerated truncated energy-norm operator augmentation
-    void enAugAccelShiftTrunc(int num_system_samples,
+    void energyOpshiftTruncatedRebasedAccel(int num_system_samples,
                               int num_per_system_samples,
                               const Eigen::VectorXd &rhs,
                               int order,
@@ -831,10 +808,7 @@ namespace aug {
                               std::function<double(int, int, double)> &window_func_denominator,
                               Eigen::VectorXd *output) {
 
-        if (bootstrap_mat_dist->isDualDistribution())
-            throw "enAugAccelShiftTrunc does not support dual distributions!";
-
-        double beta = enAugAccelShiftTruncFac(num_system_samples,
+        double beta = energyShiftFactorTruncatedRebasedAccel(num_system_samples,
                                               num_per_system_samples,
                                               rhs.size(),
                                               order,
@@ -845,10 +819,10 @@ namespace aug {
                                               window_func_numerator,
                                               window_func_denominator);
 
-        preEnAug(beta, rhs, op_Ahat, op_C, output);
+        applyEnergyOpshift(beta, rhs, op_Ahat, op_C, output);
     }
 
-    void enAugAccelShiftTrunc(int num_system_samples,
+    void energyOpshiftTruncatedRebasedAccel(int num_system_samples,
                               int num_per_system_samples,
                               const Eigen::VectorXd &rhs,
                               int order,
@@ -861,13 +835,13 @@ namespace aug {
         std::function<double(int, int, double)> window_func_numerator = &softShiftedWindowFuncNumerator;
         std::function<double(int, int, double)> window_func_denominator = &softShiftedWindowFuncDenominator;
 
-        enAugAccelShiftTrunc(num_system_samples,
+        energyOpshiftTruncatedRebasedAccel(num_system_samples,
                              num_per_system_samples,
                              rhs, order, eps, op_Ahat, bootstrap_mat_dist, q_dist, op_C,
                              window_func_numerator, window_func_denominator, output);
     }
 
-    void enAugAccelShiftTrunc(int num_system_samples,
+    void energyOpshiftTruncatedRebasedAccel(int num_system_samples,
                               int num_per_system_samples,
                               const Eigen::VectorXd &rhs,
                               int order,
@@ -875,12 +849,12 @@ namespace aug {
                               IInvertibleMatrixOperator *op_Ahat,
                               const IMatrixDistribution *bootstrap_mat_dist,
                               Eigen::VectorXd *output) {
-        enAugAccelShiftTrunc(num_system_samples,
+        energyOpshiftTruncatedRebasedAccel(num_system_samples,
                              num_per_system_samples,
                              rhs, order, eps, op_Ahat, bootstrap_mat_dist, nullptr, nullptr, output);
     }
 
-    void enAugAccelShiftTrunc(int num_system_samples,
+    void energyOpshiftTruncatedRebasedAccel(int num_system_samples,
                               int num_per_system_samples,
                               const Eigen::VectorXd &rhs,
                               int order,
@@ -890,7 +864,7 @@ namespace aug {
                               std::function<double(int, int, double)> &window_func_numerator,
                               std::function<double(int, int, double)> &window_func_denominator,
                               Eigen::VectorXd *output) {
-        enAugAccelShiftTrunc(num_system_samples,
+        energyOpshiftTruncatedRebasedAccel(num_system_samples,
                              num_per_system_samples,
                              rhs, order, eps, op_Ahat, bootstrap_mat_dist, nullptr, nullptr,
                              window_func_numerator, window_func_denominator, output);

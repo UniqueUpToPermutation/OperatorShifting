@@ -1,8 +1,8 @@
-#include "diagnostics.h"
-#include "augmentation.h"
-#include "graphlap.h"
-#include "matutil.h"
-#include "testbeds.h"
+#include <opshift/opshift.h>
+#include <opshift/diagnostics.h>
+#include <opshift/graphlap.h>
+#include <opshift/matutil.h>
+#include <opshift/tests.h>
 
 #include <random>
 #include <set>
@@ -32,7 +32,7 @@ enum class GraphPreset {
     P3D_nonunif
 };
 
-using namespace aug;
+using namespace opshift;
 using namespace lemon;
 
 std::default_random_engine dgnAsymMarkovRnd(std::chrono::system_clock::now().time_since_epoch().count());
@@ -512,4 +512,9 @@ void dgnAsymMarkov(int argc, char** argv) {
     diagnostics.run(threadCount);
     diagnostics.printResults();
     diagnostics.printLatexTable();
+}
+
+int main(int argc, char *argv[]) {
+    loadConfig();
+    dgnAsymMarkov(argc - 1, &argv[1]);
 }

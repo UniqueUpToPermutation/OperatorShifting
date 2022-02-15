@@ -1,7 +1,7 @@
 #ifndef OPERATORAUGMENTATION_DIAGNOSTICS_H
 #define OPERATORAUGMENTATION_DIAGNOSTICS_H
 
-#include "augmentation.h"
+#include <opshift/opshift.h>
 
 #include <vector>
 #include <thread>
@@ -25,7 +25,7 @@
 
 #define STRING_PADDING "                                                                                       "
 
-namespace aug {
+namespace opshift {
 
     class IVectorNorm
     {
@@ -92,24 +92,12 @@ namespace aug {
 
     template<typename ParameterType, typename HyperparameterType>
     class MatrixParameterDistribution : public IMatrixDistribution {
-    protected:
-        bool bIsDualDistribution;
-
     public:
         ParameterType parameters;
         HyperparameterType hyperparameters;
 
         MatrixParameterDistribution(ParameterType &parameters,
-                HyperparameterType &hyperparameters,
-                bool bIsDualDistribution) :
-                bIsDualDistribution(bIsDualDistribution),
-                parameters(parameters),
-                hyperparameters(hyperparameters) {
-        }
-
-        MatrixParameterDistribution(ParameterType &parameters,
                                     HyperparameterType &hyperparameters) :
-                bIsDualDistribution(false),
                 parameters(parameters),
                 hyperparameters(hyperparameters) {
         }
@@ -124,22 +112,10 @@ namespace aug {
             return std::shared_ptr<IMatrixOperator>(new IdentityMatrixSample());
         }
 
-        void drawSample(std::shared_ptr<IInvertibleMatrixOperator> *Ahat) const override {
+        std::shared_ptr<IInvertibleMatrixOperator> drawSample() const override {
             ParameterType params;
             drawParameters(&params);
-            *Ahat = convert(params);
-        }
-
-        void drawDualSample(std::shared_ptr<IInvertibleMatrixOperator> *Ahat,
-                            std::shared_ptr<IMatrixOperator> *Mhat) const override {
-            ParameterType params;
-            drawParameters(&params);
-            *Ahat = convert(params);
-            *Mhat = convertAuxiliary(params);
-        }
-
-        bool isDualDistribution() const override {
-            return bIsDualDistribution;
+            return convert(params);
         }
     };
 
@@ -266,7 +242,7 @@ namespace aug {
                 Eigen::VectorXd *output) const override {
             auto sampled_mat = bootstrapDistribution.convert(bootstrapDistribution.parameters);
 
-            aug(this->samplesPerSubRun, this->samplesPerSystem, rhs, sampled_mat.get(), &bootstrapDistribution,
+            opshift(this->samplesPerSubRun, this->samplesPerSystem, rhs, sampled_mat.get(), &bootstrapDistribution,
                    this->quDistribution.get(), this->op_R.get(), this->op_B.get(), output);
         }
     };
@@ -291,7 +267,7 @@ namespace aug {
                 Eigen::VectorXd *output) const override {
             auto sampled_mat = bootstrapDistribution.convert(bootstrapDistribution.parameters);
 
-            enAug(this->samplesPerSubRun, this->samplesPerSystem, rhs, sampled_mat.get(), &bootstrapDistribution,
+            energyOpshift(this->samplesPerSubRun, this->samplesPerSystem, rhs, sampled_mat.get(), &bootstrapDistribution,
                   this->qDistribution.get(), this->op_C.get(), output);
         }
     };
@@ -364,7 +340,7 @@ namespace aug {
                     break;
             }
 
-            enAugTrunc(this->samplesPerSubRun, this->samplesPerSystem, rhs, order, sampled_mat.get(),
+            energyOpshiftTruncated(this->samplesPerSubRun, this->samplesPerSystem, rhs, order, sampled_mat.get(),
                        &bootstrapDistribution,
                        this->qDistribution.get(), this->op_C.get(), numerator_window, denominator_window, output);
         }
@@ -443,7 +419,7 @@ namespace aug {
                     break;
             }
 
-            enAugAccelShiftTrunc(this->samplesPerSubRun, this->samplesPerSystem, rhs, order, eps, sampled_mat.get(),
+            energyOpshiftTruncatedRebasedAccel(this->samplesPerSubRun, this->samplesPerSystem, rhs, order, eps, sampled_mat.get(),
                                  &bootstrapDistribution, this->qDistribution.get(), this->op_C.get(), numerator_window,
                                  denominator_window, output);
         }
