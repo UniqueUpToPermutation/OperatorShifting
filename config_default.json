@@ -42,5 +42,16 @@
     "numSubRunsNaive" : 10000,
     "numSubRuns" : 100,
     "samplesPerSubRun" : 100
+  },
+
+  "AsymMarkov" : {
+    "preset" : 0,
+    "histogramSamples" : 12,
+    "threadCount" : 4,
+    "gridSize" : 8,
+    "discountFactor" : 0.9,
+    "numSubRunsNaive" : 10000,
+    "numSubRuns" : 100,
+    "samplesPerSubRun" : 100
   }
 }

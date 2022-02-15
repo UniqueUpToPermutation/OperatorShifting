@@ -15,5 +15,6 @@ void dgnGridLaplacian1D(int argc, char** argv);
 void dgnGridLaplacian2D(int argc, char** argv);
 void dgnGraphEdgePerturb(int argc, char** argv);
 void dgnGraphEdgeDrop(int argc, char** argv);
+void dgnAsymMarkov(int argc, char** argv);
 
 #endif //OPERATORAUGMENTATION_TESTBEDS_H

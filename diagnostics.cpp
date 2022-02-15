@@ -16,6 +16,9 @@ namespace aug {
 
     std::shared_ptr<IVectorNorm> makeL2Norm() { return std::shared_ptr<IVectorNorm>(new L2Norm()); }
     std::shared_ptr<IVectorNorm> makeEnergyNorm(IMatrixOperator* norm) {
-        return std::shared_ptr<IVectorNorm>(new EnergyNorm(norm));
+        return std::make_shared<EnergyNorm>(norm);
+    }
+    std::shared_ptr<IVectorNorm> makeResidualNorm(IMatrixOperator* mat) {
+        return std::make_shared<ResidualNorm>(mat);
     }
 }

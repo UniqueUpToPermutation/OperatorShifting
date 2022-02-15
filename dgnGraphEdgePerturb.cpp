@@ -82,6 +82,9 @@ public:
     size_t getDimension() const override {
         return hyperparameters.interiorExtractorLeft->rows();
     }
+    bool isSPD() const override {
+        return true;
+    }
     GraphEdgePerturbDistribution(GraphEdgePerturbParameters& parameters, GraphEdgePerturbHyperparameters& hyperparameters) :
             DistributionBase(parameters, hyperparameters) {}
 };

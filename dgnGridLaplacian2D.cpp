@@ -135,6 +135,9 @@ public:
     size_t getDimension() const override {
         return parameters.trueAHorizontal.rows() * parameters.trueAVertical.cols();
     }
+    bool isSPD() const override {
+        return true;
+    }
 
     GridLaplacian2DDistribution(GridLaplacian2DParameters& parameters, GridLaplacian2DHyperparameters& hyperparameters) :
             DistributionBase(parameters, hyperparameters) {}

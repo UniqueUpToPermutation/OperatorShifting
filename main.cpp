@@ -43,6 +43,8 @@ int main(int argc, char** argv)
             dgnGraphEdgePerturb(argc - 2, &argv[2]);
         else if (strMethod == "GraphEdgeDrop")
             dgnGraphEdgeDrop(argc - 2, &argv[2]);
+        else if (strMethod == "AsymMarkov")
+            dgnAsymMarkov(argc - 2, &argv[2]);
         else
             DEFAULT(argc - 2, &argv[2]);
     }

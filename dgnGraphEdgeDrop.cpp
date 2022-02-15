@@ -66,6 +66,9 @@ public:
     size_t getDimension() const override {
         return countNodes(*hyperparameters.graph);
     }
+    bool isSPD() const override {
+        return true;
+    }
     GraphEdgeDropDistribution(GraphEdgeDropParameters& parameters, GraphEdgeDropHyperparameters& hyperparameters) :
             DistributionBase(parameters, hyperparameters) {}
 };

@@ -15,5 +15,9 @@ void graphLaplacian(const lemon::ListGraph* graph, const lemon::ListGraph::EdgeM
         Eigen::SparseMatrix<double>* output);
 void graphLaplacian(const lemon::ListGraph* graph,
                     Eigen::SparseMatrix<double>* output);
+void markovGenerator(const lemon::ListDigraph* graph,
+                     const lemon::ListDigraph::ArcMap<double>* probabilities,
+                     Eigen::SparseMatrix<double>* output,
+                     double discountFactor);
 
 #endif

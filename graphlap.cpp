@@ -124,6 +124,33 @@ void enumGraphLaplacian(const lemon::ListGraph* graph,
     }
 }
 
+void enumMarkovGenerator(const lemon::ListDigraph* graph,
+                         const lemon::ListDigraph::ArcMap<double>* probabilities,
+                         std::vector<Eigen::Triplet<double>>* output,
+                         double discountFactor) {
+    int edgeCount = countArcs(*graph);
+    int vertexCount = countNodes(*graph);
+    output->reserve(edgeCount + vertexCount);
+    for (ListDigraph::NodeIt u(*graph); u != INVALID; ++u) {
+        double degree = 0.0;
+        for (ListDigraph::OutArcIt e(*graph, u); e != INVALID; ++e) {
+            degree += probabilities->operator[](e);
+        }
+
+        double selfTransitionProb = 0.0;
+        for (ListDigraph::OutArcIt e(*graph, u); e != INVALID; ++e) {
+            auto v = graph->oppositeNode(u, e);
+            double prob = probabilities->operator[](e) / degree;
+            if (u == v) {
+                selfTransitionProb = prob;
+            } else {
+                output->emplace_back(Eigen::Triplet<double>(graph->id(u), graph->id(v), - discountFactor * prob));
+            }
+        }
+        output->emplace_back(Eigen::Triplet<double>(graph->id(u), graph->id(u), 1.0 - discountFactor * selfTransitionProb));
+    }
+}
+
 void graphLaplacian(const lemon::ListGraph* graph, const lemon::ListGraph::EdgeMap<double>* weights,
                     Eigen::SparseMatrix<double>* output) {
     int count = countNodes(*graph);
@@ -139,5 +166,16 @@ void graphLaplacian(const lemon::ListGraph* graph,
     output->resize(count, count);
     std::vector<Eigen::Triplet<double>> nzEntries;
     enumGraphLaplacian(graph, &nzEntries);
+    output->setFromTriplets(nzEntries.begin(), nzEntries.end());
+}
+
+void markovGenerator(const lemon::ListDigraph* graph,
+                     const lemon::ListDigraph::ArcMap<double>* probabilities,
+                     Eigen::SparseMatrix<double>* output,
+                     double discountFactor) {
+    int count = countNodes(*graph);
+    output->resize(count, count);
+    std::vector<Eigen::Triplet<double>> nzEntries;
+    enumMarkovGenerator(graph, probabilities, &nzEntries, discountFactor);
     output->setFromTriplets(nzEntries.begin(), nzEntries.end());
 }

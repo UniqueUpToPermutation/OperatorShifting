@@ -93,6 +93,9 @@ public:
     size_t getDimension() const override {
         return parameters.trueA.size() - 1u;
     }
+    bool isSPD() const override {
+        return true;
+    }
 
     GridLaplacian1DDistribution(GridLaplacian1DParameters& parameters, GridLaplacian1DHyperparameters& hyperparameters) :
         DistributionBase(parameters, hyperparameters) {}

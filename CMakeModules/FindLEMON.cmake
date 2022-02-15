@@ -1,5 +1,3 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
-
 ## The next part looks for LEMON. Typically, you don't want to modify it.
 ##
 ## First, it tries to use LEMON as a CMAKE subproject by looking for

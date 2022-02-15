@@ -59,8 +59,25 @@ namespace aug {
         EnergyNorm(IMatrixOperator* norm) : normMatrix(norm) { }
     };
 
+    class ResidualNorm : public IVectorNorm {
+    private:
+        IMatrixOperator* normMatrix;
+    
+    public:
+        std::string getName() const override { return "Squared Residual Norm"; }
+        std::string getAbbreviatedName() const override { return "RSE"; }
+        double operator()(Eigen::VectorXd& x) const override {
+            Eigen::VectorXd result;
+            normMatrix->apply(x, &result);
+            return x.dot(x);
+        }
+
+        ResidualNorm(IMatrixOperator* norm) : normMatrix(norm) { }
+    };
+
     std::shared_ptr<IVectorNorm> makeL2Norm();
     std::shared_ptr<IVectorNorm> makeEnergyNorm(IMatrixOperator* norm);
+    std::shared_ptr<IVectorNorm> makeResidualNorm(IMatrixOperator* mat);
 
     void ProgressBar(double percentage, size_t numCharacters, std::string* output);
 
@@ -132,10 +149,10 @@ namespace aug {
         std::shared_ptr<IVectorDistribution> bDistribution;
         std::shared_ptr<IInvertibleMatrixOperator> trueMatrix;
         std::shared_ptr<IMatrixOperator> trueAuxMatrix;
-        std::shared_ptr<IVectorNorm> energyNorm;
-        std::shared_ptr<IVectorNorm> l2Norm;
+        std::shared_ptr<IVectorNorm> energyOrResidualNorm;
+        std::shared_ptr<IVectorNorm> l2Norm;        
 
-        explicit ProblemDefinition(std::shared_ptr<DistributionType> &trueDistribution) :
+        explicit ProblemDefinition(std::shared_ptr<DistributionType> trueDistribution) :
                 trueDistribution(trueDistribution) {
             int dimension = trueDistribution->getDimension();
             std::function<void(Eigen::VectorXd *)> bDistLambda = [dimension](Eigen::VectorXd *output) {
@@ -147,7 +164,11 @@ namespace aug {
             trueAuxMatrix = trueDistribution->convertAuxiliary(trueDistribution->parameters);
 
             // Define norms
-            energyNorm = makeEnergyNorm(trueMatrix.get());
+            if (trueDistribution->isSPD()) {
+                energyOrResidualNorm = makeEnergyNorm(trueMatrix.get());
+            } else {
+                energyOrResidualNorm = makeResidualNorm(trueMatrix.get());
+            }
             l2Norm = makeL2Norm();
         }
     };
@@ -183,7 +204,7 @@ namespace aug {
                     new IdenticalVectorDistributionFromLambda(sampler));
 
             norms.push_back(parent->l2Norm.get());
-            norms.push_back(parent->energyNorm.get());
+            norms.push_back(parent->energyOrResidualNorm.get());
         }
 
         explicit ProblemRun(ParentType *parent, const std::string &name) :

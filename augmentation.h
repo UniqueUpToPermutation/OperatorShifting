@@ -98,6 +98,7 @@ namespace aug {
         virtual void drawDualSample(std::shared_ptr<IInvertibleMatrixOperator>* Ahat,
                             std::shared_ptr<IMatrixOperator>* Mhat) const;
         virtual bool isDualDistribution() const;
+        virtual bool isSPD() const = 0;
     };
 
     // The identity matrix as an operator

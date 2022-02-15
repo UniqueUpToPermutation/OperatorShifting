@@ -1,5 +1,5 @@
 {
-  "default" : "GraphEdgePerturb",
+  "default" : "AsymMarkov",
 
   "GridLaplacian1D" : {
     "gridSize" : 128,
@@ -39,6 +39,17 @@
     "gamma" : 1.0,
     "p" : 0.75,
     "threadCount" : 4,
+    "numSubRunsNaive" : 10000,
+    "numSubRuns" : 100,
+    "samplesPerSubRun" : 100
+  },
+
+  "AsymMarkov" : {
+    "preset" : 0,
+    "histogramSamples" : 10,
+    "threadCount" : 1,
+    "gridSize" : 5,
+    "discountFactor" : 0.9,
     "numSubRunsNaive" : 10000,
     "numSubRuns" : 100,
     "samplesPerSubRun" : 100
