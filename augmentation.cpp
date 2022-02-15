@@ -8,6 +8,18 @@ namespace aug {
         return Eigen::sqrt(-2.0 * Eigen::log(U1)) * (Eigen::cos(2.0 * M_PI * U2));
     }
 
+    void IMatrixOperator::debugPrint() const {
+        throw std::runtime_error("Not implemented!");
+    }
+
+    void SparseMatrixSampleNonInvertible::debugPrint() const {
+        std::cout << Eigen::MatrixXd(sparse_mat) << std::endl;
+    }
+
+    void SparseMatrixSampleSPD::debugPrint() const {
+        std::cout << Eigen::MatrixXd(sparse_mat) << std::endl;
+    }
+
     void VectorDistributionFromLambda::drawSample(Eigen::VectorXd *v) const {
         lambda_func(v);
     }
@@ -41,24 +53,52 @@ namespace aug {
     SparseMatrixSampleNonInvertible::SparseMatrixSampleNonInvertible(Eigen::SparseMatrix<double>& sparse_mat) :
         sparse_mat(sparse_mat) {}
 
-    void DefaultSparseMatrixSample::preprocess() {
+    void SparseMatrixSampleSPD::preprocess() {
         solver.compute(sparse_mat);
     }
 
-    void DefaultSparseMatrixSample::solve(const Eigen::VectorXd &b, Eigen::VectorXd *result) const {
+    void SparseMatrixSampleSPD::solve(const Eigen::VectorXd &b, Eigen::VectorXd *result) const {
         *result = solver.solve(b);
     }
 
-    void DefaultSparseMatrixSample::apply(const Eigen::VectorXd &b, Eigen::VectorXd *result) const {
+    void SparseMatrixSampleSPD::apply(const Eigen::VectorXd &b, Eigen::VectorXd *result) const {
         *result = sparse_mat * b;
     }
 
-    DefaultSparseMatrixSample::DefaultSparseMatrixSample(Eigen::SparseMatrix<double> &sparse_mat) {
+    SparseMatrixSampleSPD::SparseMatrixSampleSPD(Eigen::SparseMatrix<double> &sparse_mat) {
         this->sparse_mat = sparse_mat;
     }
 
-    bool DefaultSparseMatrixSample::isIdentity() const {
+    bool SparseMatrixSampleSPD::isIdentity() const {
         return false;
+    }
+
+    void SparseMatrixSampleSquare::preprocess() {
+        solver.compute(sparse_mat);
+    }
+
+    void SparseMatrixSampleSquare::solve(
+        const Eigen::VectorXd& b, 
+        Eigen::VectorXd* result) const {
+        *result = solver.solve(b);
+    }
+
+    void SparseMatrixSampleSquare::apply(
+        const Eigen::VectorXd& b, 
+        Eigen::VectorXd* result) const {
+        *result = sparse_mat * b;
+    }
+
+    bool SparseMatrixSampleSquare::isIdentity() const {
+        return false;
+    }
+
+    void SparseMatrixSampleSquare::debugPrint() const {
+        std::cout << Eigen::MatrixXd(sparse_mat) << std::endl;
+    }
+
+    SparseMatrixSampleSquare::SparseMatrixSampleSquare(
+        Eigen::SparseMatrix<double>& sparse_mat) : sparse_mat(sparse_mat) {
     }
 
     void IMatrixDistribution::drawDualSample(std::shared_ptr<IInvertibleMatrixOperator> *Ahat,

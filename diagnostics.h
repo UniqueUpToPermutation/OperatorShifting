@@ -35,6 +35,7 @@ namespace aug {
         virtual double operator()(Eigen::VectorXd& x) const = 0;
     };
 
+    // Represents x^T x
     class L2Norm : public IVectorNorm
     {
     public:
@@ -43,6 +44,7 @@ namespace aug {
         double operator()(Eigen::VectorXd& x) const override { return x.dot(x); }
     };
 
+    // Represents x^T A x
     class EnergyNorm : public IVectorNorm
     {
     private:
@@ -59,6 +61,7 @@ namespace aug {
         EnergyNorm(IMatrixOperator* norm) : normMatrix(norm) { }
     };
 
+    // Represents x^T A^T A x
     class ResidualNorm : public IVectorNorm {
     private:
         IMatrixOperator* normMatrix;

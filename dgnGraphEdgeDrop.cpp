@@ -61,7 +61,7 @@ public:
         // Add stuff to the diagonal to better conditioned system
         for (int i = 0; i < dim; ++i)
             matrix.coeffRef(i, i) = matrix.coeff(i, i) + hyperparameters.gamma;
-        return std::shared_ptr<IInvertibleMatrixOperator>(new DefaultSparseMatrixSample(matrix));
+        return std::shared_ptr<IInvertibleMatrixOperator>(new SparseMatrixSampleSPD(matrix));
     }
     size_t getDimension() const override {
         return countNodes(*hyperparameters.graph);

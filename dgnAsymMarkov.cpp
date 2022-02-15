@@ -121,21 +121,29 @@ PresetResults generate1DGridChain(
     }
 
     for (int i = 0; i < nodeCount; ++i) {
-        leftLeftArcs.emplace_back(graph->addArc(nodes[idx(i)], nodes[idx(i - 2)]));
+        if (leftLeftProbability > 0.0)
+            leftLeftArcs.emplace_back(graph->addArc(nodes[idx(i)], nodes[idx(i - 2)]));
+        
         leftArcs.emplace_back(graph->addArc(nodes[idx(i)], nodes[idx(i - 1)]));
-        rightArcs.emplace_back(graph->addArc(nodes[idx(i)], nodes[idx(i + 1)]));
-        rightRightArcs.emplace_back(graph->addArc(nodes[idx(i)], nodes[idx(i + 2)]));
         selfArcs.emplace_back(graph->addArc(nodes[idx(i)], nodes[idx(i)]));
+        rightArcs.emplace_back(graph->addArc(nodes[idx(i)], nodes[idx(i + 1)]));
+        
+        if (rightRightProbability > 0.0)
+            rightRightArcs.emplace_back(graph->addArc(nodes[idx(i)], nodes[idx(i + 2)]));
     }
 
     auto probabilities = std::make_unique<ListDigraph::ArcMap<double>>(*graph);
 
     for (int i = 0; i < nodeCount; ++i) {
-        (*probabilities)[leftLeftArcs[i]] = leftLeftProbability;
+        if (leftLeftProbability > 0.0)
+            (*probabilities)[leftLeftArcs[i]] = leftLeftProbability;
+
         (*probabilities)[leftArcs[i]] = leftProbability;
         (*probabilities)[selfArcs[i]] = stayProbability;
         (*probabilities)[rightArcs[i]] = rightProbability;
-        (*probabilities)[rightRightArcs[i]] = rightRightProbability;
+        
+        if (rightRightProbability > 0.0)
+            (*probabilities)[rightRightArcs[i]] = rightRightProbability;
     }
 
     return std::make_tuple(std::move(graph), std::move(probabilities));
@@ -423,7 +431,7 @@ public:
     std::shared_ptr<IInvertibleMatrixOperator> convert(const MarkovSampleParameters& params) const override {
         Eigen::SparseMatrix<double> matrix(getDimension(), getDimension());
         markovGenerator(hyperparameters.graph, params.probabilities.get(), &matrix, hyperparameters.discountFactor);
-        return std::make_shared<DefaultSparseMatrixSample>(matrix);
+        return std::make_shared<SparseMatrixSampleSquare>(matrix);
     }
     size_t getDimension() const override {
         return dimension;

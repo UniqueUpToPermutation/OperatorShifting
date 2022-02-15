@@ -77,7 +77,7 @@ public:
         Eigen::SparseMatrix<double> matrix(getDimension(), getDimension());
         graphLaplacian(hyperparameters.graph, params.weights.get(), &matrix);
         matrix = (*hyperparameters.interiorExtractorLeft) * matrix * (*hyperparameters.interiorExtractorRight);
-        return std::shared_ptr<IInvertibleMatrixOperator>(new DefaultSparseMatrixSample(matrix));
+        return std::shared_ptr<IInvertibleMatrixOperator>(new SparseMatrixSampleSPD(matrix));
     }
     size_t getDimension() const override {
         return hyperparameters.interiorExtractorLeft->rows();

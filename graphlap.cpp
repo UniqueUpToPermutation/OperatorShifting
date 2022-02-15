@@ -141,10 +141,13 @@ void enumMarkovGenerator(const lemon::ListDigraph* graph,
         for (ListDigraph::OutArcIt e(*graph, u); e != INVALID; ++e) {
             auto v = graph->oppositeNode(u, e);
             double prob = probabilities->operator[](e) / degree;
-            if (u == v) {
+            if (graph->id(u) == graph->id(v)) {
                 selfTransitionProb = prob;
             } else {
-                output->emplace_back(Eigen::Triplet<double>(graph->id(u), graph->id(v), - discountFactor * prob));
+                output->emplace_back(Eigen::Triplet<double>(
+                    graph->id(u),
+                    graph->id(v), 
+                    - discountFactor * prob));
             }
         }
         output->emplace_back(Eigen::Triplet<double>(graph->id(u), graph->id(u), 1.0 - discountFactor * selfTransitionProb));

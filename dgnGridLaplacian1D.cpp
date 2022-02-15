@@ -88,7 +88,7 @@ public:
     std::shared_ptr<IInvertibleMatrixOperator> convert(const GridLaplacian1DParameters& params) const override {
         Eigen::SparseMatrix<double> matrix;
         formLaplacian1D(params.trueA, &matrix);
-        return std::shared_ptr<IInvertibleMatrixOperator>(new DefaultSparseMatrixSample(matrix));
+        return std::shared_ptr<IInvertibleMatrixOperator>(new SparseMatrixSampleSPD(matrix));
     }
     size_t getDimension() const override {
         return parameters.trueA.size() - 1u;

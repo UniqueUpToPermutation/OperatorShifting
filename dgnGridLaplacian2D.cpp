@@ -130,7 +130,7 @@ public:
     std::shared_ptr<IInvertibleMatrixOperator> convert(const GridLaplacian2DParameters& params) const override {
         Eigen::SparseMatrix<double> matrix;
         formLaplacian2D(params.trueAHorizontal, params.trueAVertical, &matrix, hyperparameters.h);
-        return std::shared_ptr<IInvertibleMatrixOperator>(new DefaultSparseMatrixSample(matrix));
+        return std::shared_ptr<IInvertibleMatrixOperator>(new SparseMatrixSampleSPD(matrix));
     }
     size_t getDimension() const override {
         return parameters.trueAHorizontal.rows() * parameters.trueAVertical.cols();

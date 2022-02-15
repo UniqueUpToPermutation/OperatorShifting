@@ -46,9 +46,9 @@
 
   "AsymMarkov" : {
     "preset" : 0,
-    "histogramSamples" : 10,
+    "histogramSamples" : 12,
     "threadCount" : 1,
-    "gridSize" : 5,
+    "gridSize" : 3,
     "discountFactor" : 0.9,
     "numSubRunsNaive" : 10000,
     "numSubRuns" : 100,

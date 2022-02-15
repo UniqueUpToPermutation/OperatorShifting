@@ -57,6 +57,7 @@ namespace aug {
     public:
         virtual void apply(const Eigen::VectorXd& b, Eigen::VectorXd* result) const = 0;
         virtual bool isIdentity() const = 0;
+        virtual void debugPrint() const;
     };
 
     class IInvertibleMatrixOperator : public IMatrixOperator
@@ -72,11 +73,12 @@ namespace aug {
 
         void apply(const Eigen::VectorXd& b, Eigen::VectorXd* result) const override;
         bool isIdentity() const override;
+        void debugPrint() const override;
 
         explicit SparseMatrixSampleNonInvertible(Eigen::SparseMatrix<double>& sparse_mat);
     };
 
-    class DefaultSparseMatrixSample : public IInvertibleMatrixOperator
+    class SparseMatrixSampleSPD : public IInvertibleMatrixOperator
     {
     public:
         Eigen::SparseMatrix<double> sparse_mat;
@@ -87,8 +89,25 @@ namespace aug {
         void solve(const Eigen::VectorXd& b, Eigen::VectorXd* result) const override;
         void apply(const Eigen::VectorXd& b, Eigen::VectorXd* result) const override;
         bool isIdentity() const override;
+        void debugPrint() const override;
 
-        explicit DefaultSparseMatrixSample(Eigen::SparseMatrix<double>& sparse_mat);
+        explicit SparseMatrixSampleSPD(Eigen::SparseMatrix<double>& sparse_mat);
+    };
+
+    class SparseMatrixSampleSquare : public IInvertibleMatrixOperator
+    {
+    public:
+        Eigen::SparseMatrix<double> sparse_mat;
+        Eigen::SparseLU<Eigen::SparseMatrix<double>> solver;
+    
+    public:
+        void preprocess() override;
+        void solve(const Eigen::VectorXd& b, Eigen::VectorXd* result) const override;
+        void apply(const Eigen::VectorXd& b, Eigen::VectorXd* result) const override;
+        bool isIdentity() const override;
+        void debugPrint() const override;
+
+        explicit SparseMatrixSampleSquare(Eigen::SparseMatrix<double>& sparse_mat);
     };
 
     class IMatrixDistribution
