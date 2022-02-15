@@ -16,6 +16,8 @@ set(OPSHIFT_SRC
         ${OPSHIFT_SRC_DIR}/graphlap.cpp
         ${OPSHIFT_SRC_DIR}/matutil.cpp
         ${OPSHIFT_SRC_DIR}/opshift.cpp
+        ${OPSHIFT_SRC_DIR}/energyopshift.cpp
+        ${OPSHIFT_SRC_DIR}/residualopshift.cpp
 )
 
 set(OPSHIFT_INCLUDE_DIR
