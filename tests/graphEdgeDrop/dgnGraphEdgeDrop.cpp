@@ -141,68 +141,68 @@ void dgnGraphEdgeDrop(int argc, char** argv) {
     diagnostics.addRun(run);
 
     run = std::shared_ptr<ProblemRunType>(
-            new AugmentationRun<GraphEdgeDropParameters, GraphEdgeDropHyperparameters>(problem_def.get()));
+            new OpshiftRun<GraphEdgeDropParameters, GraphEdgeDropHyperparameters>(problem_def.get()));
     run->numberSubRuns = numSubRuns;
     run->samplesPerSubRun = samplesPerSubRun;
     diagnostics.addRun(run);
 
     run = std::shared_ptr<ProblemRunType>(
-            new EnergyAugmentationRun<GraphEdgeDropParameters, GraphEdgeDropHyperparameters>(problem_def.get()));
+            new EnergyOpshiftRun<GraphEdgeDropParameters, GraphEdgeDropHyperparameters>(problem_def.get()));
     run->numberSubRuns = numSubRuns;
     run->samplesPerSubRun = samplesPerSubRun;
     diagnostics.addRun(run);
 
     run = std::shared_ptr<ProblemRunType>(
-            new TruncatedEnergyAugmentationRun<GraphEdgeDropParameters,
+            new EnergyOpshiftTruncatedRun<GraphEdgeDropParameters,
                     GraphEdgeDropHyperparameters>(problem_def.get(), 2));
     run->numberSubRuns = numSubRuns;
     run->samplesPerSubRun = samplesPerSubRun;
     diagnostics.addRun(run);
 
     run = std::shared_ptr<ProblemRunType>(
-            new TruncatedEnergyAugmentationRun<GraphEdgeDropParameters,
+            new EnergyOpshiftTruncatedRun<GraphEdgeDropParameters,
                     GraphEdgeDropHyperparameters>(problem_def.get(), 4));
     run->numberSubRuns = numSubRuns;
     run->samplesPerSubRun = samplesPerSubRun;
     diagnostics.addRun(run);
 
     run = std::shared_ptr<ProblemRunType>(
-            new TruncatedEnergyAugmentationRun<GraphEdgeDropParameters,
+            new EnergyOpshiftTruncatedRun<GraphEdgeDropParameters,
                     GraphEdgeDropHyperparameters>(problem_def.get(), 6));
     run->numberSubRuns = numSubRuns;
     run->samplesPerSubRun = samplesPerSubRun;
     diagnostics.addRun(run);
 
     run = std::shared_ptr<ProblemRunType>(
-            new TruncatedEnergyAugmentationRun<GraphEdgeDropParameters,
+            new EnergyOpshiftTruncatedRun<GraphEdgeDropParameters,
                     GraphEdgeDropHyperparameters>(problem_def.get(), 2, TRUNCATION_WINDOW_HARD));
     run->numberSubRuns = numSubRuns;
     run->samplesPerSubRun = samplesPerSubRun;
     diagnostics.addRun(run);
 
     run = std::shared_ptr<ProblemRunType>(
-            new TruncatedEnergyAugmentationRun<GraphEdgeDropParameters,
+            new EnergyOpshiftTruncatedRun<GraphEdgeDropParameters,
                     GraphEdgeDropHyperparameters>(problem_def.get(), 4, TRUNCATION_WINDOW_HARD));
     run->numberSubRuns = numSubRuns;
     run->samplesPerSubRun = samplesPerSubRun;
     diagnostics.addRun(run);
 
     run = std::shared_ptr<ProblemRunType>(
-            new AccelShiftTruncatedEnergyAugmentationRun<GraphEdgeDropParameters,
+            new EnergyOpshiftTruncatedRebasedAccelRun<GraphEdgeDropParameters,
                     GraphEdgeDropHyperparameters>(problem_def.get(), 2));
     run->numberSubRuns = numSubRuns;
     run->samplesPerSubRun = samplesPerSubRun;
     diagnostics.addRun(run);
 
     run = std::shared_ptr<ProblemRunType>(
-            new AccelShiftTruncatedEnergyAugmentationRun<GraphEdgeDropParameters,
+            new EnergyOpshiftTruncatedRebasedAccelRun<GraphEdgeDropParameters,
                     GraphEdgeDropHyperparameters>(problem_def.get(), 4));
     run->numberSubRuns = numSubRuns;
     run->samplesPerSubRun = samplesPerSubRun;
     diagnostics.addRun(run);
 
     run = std::shared_ptr<ProblemRunType>(
-            new AccelShiftTruncatedEnergyAugmentationRun<GraphEdgeDropParameters,
+            new EnergyOpshiftTruncatedRebasedAccelRun<GraphEdgeDropParameters,
                     GraphEdgeDropHyperparameters>(problem_def.get(), 6));
     run->numberSubRuns = numSubRuns;
     run->samplesPerSubRun = 100;

@@ -51,14 +51,15 @@ namespace opshift {
         IMatrixOperator* normMatrix;
     public:
         std::string getName() const override { return "Squared Energy Norm"; }
-        std::string getAbbreviatedName() const override { return "EMSE"; }
+        std::string getAbbreviatedName() const override { return "MESE"; }
         double operator()(Eigen::VectorXd& x) const override {
             Eigen::VectorXd result;
             normMatrix->apply(x, &result);
             return x.dot(result);
         }
 
-        EnergyNorm(IMatrixOperator* norm) : normMatrix(norm) { }
+        inline EnergyNorm(IMatrixOperator* norm) : normMatrix(norm) { 
+        }
     };
 
     // Represents x^T A^T A x
@@ -68,14 +69,15 @@ namespace opshift {
     
     public:
         std::string getName() const override { return "Squared Residual Norm"; }
-        std::string getAbbreviatedName() const override { return "RSE"; }
+        std::string getAbbreviatedName() const override { return "MRSE"; }
         double operator()(Eigen::VectorXd& x) const override {
             Eigen::VectorXd result;
             normMatrix->apply(x, &result);
             return x.dot(x);
         }
 
-        ResidualNorm(IMatrixOperator* norm) : normMatrix(norm) { }
+        inline ResidualNorm(IMatrixOperator* norm) : normMatrix(norm) {
+        }
     };
 
     std::shared_ptr<IVectorNorm> makeL2Norm();
@@ -221,7 +223,7 @@ namespace opshift {
     };
 
     template<typename ParameterType, typename HyperparameterType>
-    class AugmentationRun : public ProblemRun<ParameterType, HyperparameterType> {
+    class OpshiftRun : public ProblemRun<ParameterType, HyperparameterType> {
     public:
         typedef MatrixParameterDistribution<ParameterType, HyperparameterType> DistributionType;
         typedef ProblemDefinition<ParameterType, HyperparameterType> ParentType;
@@ -229,13 +231,13 @@ namespace opshift {
         std::shared_ptr<IMatrixOperator> op_B;
         std::shared_ptr<IMatrixOperator> op_R;
 
-        explicit AugmentationRun(ParentType *parent, std::shared_ptr<IMatrixOperator> &op_B,
+        explicit OpshiftRun(ParentType *parent, std::shared_ptr<IMatrixOperator> &op_B,
                                  std::shared_ptr<IMatrixOperator> &op_R) :
-                ProblemRun<ParameterType, HyperparameterType>(parent, "Augmentation", "AG"),
+                ProblemRun<ParameterType, HyperparameterType>(parent, "General Opshift", "GS"),
                 op_B(op_B), op_R(op_R) {}
 
-        explicit AugmentationRun(ParentType *parent) :
-                ProblemRun<ParameterType, HyperparameterType>(parent, "Augmentation", "AG"),
+        explicit OpshiftRun(ParentType *parent) :
+                ProblemRun<ParameterType, HyperparameterType>(parent, "General Opshift", "GS"),
                 op_B(nullptr), op_R(nullptr) {}
 
         void subRun(DistributionType &bootstrapDistribution, Eigen::VectorXd &rhs,
@@ -248,19 +250,19 @@ namespace opshift {
     };
 
     template<typename ParameterType, typename HyperparameterType>
-    class EnergyAugmentationRun : public ProblemRun<ParameterType, HyperparameterType> {
+    class EnergyOpshiftRun : public ProblemRun<ParameterType, HyperparameterType> {
     public:
         typedef MatrixParameterDistribution<ParameterType, HyperparameterType> DistributionType;
         typedef ProblemDefinition<ParameterType, HyperparameterType> ParentType;
 
         std::shared_ptr<IMatrixOperator> op_C;
 
-        explicit EnergyAugmentationRun(ParentType *parent, std::shared_ptr<IMatrixOperator> &op_C) :
-                ProblemRun<ParameterType, HyperparameterType>(parent, "Energy-Norm Augmentation", "EAG"),
+        explicit EnergyOpshiftRun(ParentType *parent, std::shared_ptr<IMatrixOperator> &op_C) :
+                ProblemRun<ParameterType, HyperparameterType>(parent, "Energy Opshift", "ES"),
                 op_C(op_C) {}
 
-        explicit EnergyAugmentationRun(ParentType *parent) :
-                ProblemRun<ParameterType, HyperparameterType>(parent, "Energy-Norm Augmentation", "EAG"),
+        explicit EnergyOpshiftRun(ParentType *parent) :
+                ProblemRun<ParameterType, HyperparameterType>(parent, "Energy Opshift", "ES"),
                 op_C(nullptr) {}
 
         void subRun(DistributionType &bootstrapDistribution, Eigen::VectorXd &rhs,
@@ -273,7 +275,7 @@ namespace opshift {
     };
 
     template<typename ParameterType, typename HyperparameterType>
-    class TruncatedEnergyAugmentationRun : public ProblemRun<ParameterType, HyperparameterType> {
+    class EnergyOpshiftTruncatedRun : public ProblemRun<ParameterType, HyperparameterType> {
     public:
         typedef MatrixParameterDistribution<ParameterType, HyperparameterType> DistributionType;
         typedef ProblemDefinition<ParameterType, HyperparameterType> ParentType;
@@ -284,7 +286,7 @@ namespace opshift {
 
         std::string buildName() const {
             std::ostringstream os;
-            os << "Trunc. En-Norm Augmentation (Order " << order;
+            os << "Energy Opshift Truncated (Order " << order;
             if (windowType == TRUNCATION_WINDOW_HARD)
                 os << ", Hard Window";
             os << ")";
@@ -299,19 +301,19 @@ namespace opshift {
             return order;
         }
 
-        explicit TruncatedEnergyAugmentationRun(ParentType *parent, size_t order,
+        explicit EnergyOpshiftTruncatedRun(ParentType *parent, size_t order,
                                                 TruncationWindowType windowType, std::shared_ptr<IMatrixOperator> &op_C)
                 :
-                ProblemRun<ParameterType, HyperparameterType>(parent, "", "T-EAG"),
+                ProblemRun<ParameterType, HyperparameterType>(parent, "", "ES-T"),
                 order(order),
                 windowType(windowType),
                 op_C(op_C) {
             this->name = buildName();
         }
 
-        explicit TruncatedEnergyAugmentationRun(ParentType *parent, size_t order = DEFAULT_TRUNCATION_ORDER,
+        explicit EnergyOpshiftTruncatedRun(ParentType *parent, size_t order = DEFAULT_TRUNCATION_ORDER,
                                                 TruncationWindowType windowType = TRUNCATION_WINDOW_SOFT) :
-                ProblemRun<ParameterType, HyperparameterType>(parent, "", "T-EAG"),
+                ProblemRun<ParameterType, HyperparameterType>(parent, "", "ES-T"),
                 order(order),
                 windowType(windowType),
                 op_C(nullptr) {
@@ -347,7 +349,7 @@ namespace opshift {
     };
 
     template<typename ParameterType, typename HyperparameterType>
-    class AccelShiftTruncatedEnergyAugmentationRun : public ProblemRun<ParameterType, HyperparameterType> {
+    class EnergyOpshiftTruncatedRebasedAccelRun : public ProblemRun<ParameterType, HyperparameterType> {
     public:
         typedef MatrixParameterDistribution<ParameterType, HyperparameterType> DistributionType;
         typedef ProblemDefinition<ParameterType, HyperparameterType> ParentType;
@@ -359,7 +361,7 @@ namespace opshift {
 
         std::string buildName() const {
             std::ostringstream os;
-            os << "Accel. Shift. Trunc. En-Norm Augmentation (Order " << order;
+            os << "Energy Opshift Truncated Rebased & Accelerated (Order " << order;
             if (windowType == TRUNCATION_WINDOW_HARD)
                 os << ", Hard Window";
             os << ")";
@@ -374,11 +376,11 @@ namespace opshift {
             return order;
         }
 
-        explicit AccelShiftTruncatedEnergyAugmentationRun(ParentType *parent, int order,
+        explicit EnergyOpshiftTruncatedRebasedAccelRun(ParentType *parent, int order,
                                                           TruncationWindowType windowType,
                                                           double eps,
                                                           std::shared_ptr<IMatrixOperator> &op_C) :
-                ProblemRun<ParameterType, HyperparameterType>(parent, "", "AST-EAG"),
+                ProblemRun<ParameterType, HyperparameterType>(parent, "", "ES-TRA"),
                 order(order),
                 windowType(windowType),
                 eps(eps),
@@ -386,10 +388,10 @@ namespace opshift {
             this->name = buildName();
         }
 
-        explicit AccelShiftTruncatedEnergyAugmentationRun(ParentType *parent, int order = DEFAULT_TRUNCATION_ORDER,
+        explicit EnergyOpshiftTruncatedRebasedAccelRun(ParentType *parent, int order = DEFAULT_TRUNCATION_ORDER,
                                                           TruncationWindowType windowType = DEFAULT_TRUNCATION_WINDOW,
                                                           double eps = DEFAULT_POWER_METHOD_EPS) :
-                ProblemRun<ParameterType, HyperparameterType>(parent, "", "AST-EAG"),
+                ProblemRun<ParameterType, HyperparameterType>(parent, "", "ES-TRA"),
                 order(order),
                 windowType(windowType),
                 eps(eps),
@@ -470,7 +472,7 @@ namespace opshift {
                 std::cout << run->getOrder() << " & ";
 
             auto winType = run->getWindowType();
-            if (run->getAbbreviatedName() == "AST-EAG")
+            if (run->getAbbreviatedName() == "ES-TRA")
                 winType = TRUNCATION_WINDOW_NOT_APPLICABLE;
 
             switch (winType) {

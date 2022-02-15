@@ -504,7 +504,7 @@ void dgnAsymMarkov(int argc, char** argv) {
     diagnostics.addRun(run);
 
     run = std::shared_ptr<ProblemRunType>(
-            new AugmentationRun<MarkovSampleParameters, MarkovSampleHyperparameters>(problem_def.get()));
+            new OpshiftRun<MarkovSampleParameters, MarkovSampleHyperparameters>(problem_def.get()));
     run->numberSubRuns = numSubRuns;
     run->samplesPerSubRun = samplesPerSubRun;
     diagnostics.addRun(run);
