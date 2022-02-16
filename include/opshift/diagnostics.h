@@ -73,7 +73,7 @@ namespace opshift {
         double operator()(Eigen::VectorXd& x) const override {
             Eigen::VectorXd result;
             normMatrix->apply(x, &result);
-            return x.dot(x);
+            return result.dot(result);
         }
 
         inline ResidualNorm(IMatrixOperator* norm) : normMatrix(norm) {
@@ -424,6 +424,89 @@ namespace opshift {
             energyOpshiftTruncatedRebasedAccel(this->samplesPerSubRun, this->samplesPerSystem, rhs, order, eps, sampled_mat.get(),
                                  &bootstrapDistribution, this->qDistribution.get(), this->op_C.get(), numerator_window,
                                  denominator_window, output);
+        }
+    };
+
+    template<typename ParameterType, typename HyperparameterType>
+    class ResidualOpshiftRun : public ProblemRun<ParameterType, HyperparameterType> {
+    public:
+        typedef MatrixParameterDistribution<ParameterType, HyperparameterType> DistributionType;
+        typedef ProblemDefinition<ParameterType, HyperparameterType> ParentType;
+
+        std::shared_ptr<IMatrixOperator> op_R;
+
+        std::string buildName() const {
+            std::ostringstream os;
+            os << "Residual Opshift";
+            return os.str();
+        }
+
+        explicit ResidualOpshiftRun(ParentType *parent,
+            std::shared_ptr<IMatrixOperator> &op_R) :
+                ProblemRun<ParameterType, HyperparameterType>(parent, "", "RS"),
+                op_R(op_R) {
+            this->name = buildName();
+        }
+
+        explicit ResidualOpshiftRun(ParentType *parent) :
+                ProblemRun<ParameterType, HyperparameterType>(parent, "", "RS"),
+                op_R(nullptr) {
+            this->name = buildName();
+        }
+
+        void subRun(DistributionType &bootstrapDistribution, Eigen::VectorXd &rhs,
+                Eigen::VectorXd *output) const override {
+            auto sampled_mat = bootstrapDistribution.convert(bootstrapDistribution.parameters);
+
+            residualOpshift(
+                this->samplesPerSubRun, 
+                this->samplesPerSystem,
+                rhs, sampled_mat.get(), 
+                &bootstrapDistribution, output);
+        }
+    };
+
+    template<typename ParameterType, typename HyperparameterType>
+    class ResidualOpshiftTruncatedRun : public ProblemRun<ParameterType, HyperparameterType> {
+    public:
+        typedef MatrixParameterDistribution<ParameterType, HyperparameterType> DistributionType;
+        typedef ProblemDefinition<ParameterType, HyperparameterType> ParentType;
+
+        int order;
+        std::shared_ptr<IMatrixOperator> op_R;
+
+        std::string buildName() const {
+            std::ostringstream os;
+            os << "Residual Opshift Truncated (Order " << order << ")";
+            return os.str();
+        }
+
+        explicit ResidualOpshiftTruncatedRun(
+            ParentType *parent, int order,
+            std::shared_ptr<IMatrixOperator> &op_R) :
+                ProblemRun<ParameterType, HyperparameterType>(parent, "", "RS-T"),
+                order(order),
+                op_R(op_R) {
+            this->name = buildName();
+        }
+
+        explicit ResidualOpshiftTruncatedRun(
+            ParentType *parent, int order) :
+                ProblemRun<ParameterType, HyperparameterType>(parent, "", "RS-T"),
+                order(order),
+                op_R(nullptr) {
+            this->name = buildName();
+        }
+
+        void subRun(DistributionType &bootstrapDistribution, Eigen::VectorXd &rhs,
+                Eigen::VectorXd *output) const override {
+            auto sampled_mat = bootstrapDistribution.convert(bootstrapDistribution.parameters);
+
+            residualOpshiftTruncated(
+                this->samplesPerSubRun, 
+                this->samplesPerSystem,
+                rhs, order, sampled_mat.get(), 
+                &bootstrapDistribution, output);
         }
     };
 

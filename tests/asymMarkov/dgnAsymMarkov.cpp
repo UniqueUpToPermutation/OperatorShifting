@@ -35,7 +35,8 @@ enum class GraphPreset {
 using namespace opshift;
 using namespace lemon;
 
-std::default_random_engine dgnAsymMarkovRnd(std::chrono::system_clock::now().time_since_epoch().count());
+std::default_random_engine dgnAsymMarkovRnd(
+    std::chrono::system_clock::now().time_since_epoch().count());
 
 // Treat the outgoing edges of a node as a histogram
 void histogramSample(
@@ -84,7 +85,9 @@ typedef std::function<std::tuple<double, double, double, double>(int, int)>
 typedef std::function<std::tuple<double, double, double, double, double, double>(int, int, int)>
     grid3DProbabilityFunc;
 
-typedef std::tuple<std::unique_ptr<ListDigraph>, std::unique_ptr<ListDigraph::ArcMap<double>>> 
+typedef std::tuple<
+    std::unique_ptr<ListDigraph>, 
+    std::unique_ptr<ListDigraph::ArcMap<double>>> 
     PresetResults;
 
 PresetResults generate1DGridChain(
@@ -410,16 +413,22 @@ struct MarkovSampleHyperparameters {
     double discountFactor;
 };
 
-typedef MatrixParameterDistribution<MarkovSampleParameters, MarkovSampleHyperparameters> DistributionBase;
-typedef ProblemDefinition<MarkovSampleParameters, MarkovSampleHyperparameters> ProblemDefType;
+typedef MatrixParameterDistribution<
+    MarkovSampleParameters, 
+    MarkovSampleHyperparameters> DistributionBase;
+typedef ProblemDefinition<
+    MarkovSampleParameters, 
+    MarkovSampleHyperparameters> ProblemDefType;
 
 class MarkovHistogramSampleDistribution : public DistributionBase {
 private:
     const size_t dimension;
 
 public:
-    void drawParameters(MarkovSampleParameters* output) const override {
-        auto newProbabilities = std::make_shared<ListDigraph::ArcMap<double>>(*hyperparameters.graph);
+    void drawParameters(
+        MarkovSampleParameters* output) const override {
+        auto newProbabilities = std::make_shared<
+            ListDigraph::ArcMap<double>>(*hyperparameters.graph);
 
         histogramSample(hyperparameters.graph, 
             parameters.probabilities.get(), 
@@ -428,18 +437,31 @@ public:
 
         output->probabilities = std::move(newProbabilities);
     }
-    std::shared_ptr<IInvertibleMatrixOperator> convert(const MarkovSampleParameters& params) const override {
+
+    std::shared_ptr<IInvertibleMatrixOperator> convert(
+        const MarkovSampleParameters& params) const override {
         Eigen::SparseMatrix<double> matrix(getDimension(), getDimension());
-        markovGenerator(hyperparameters.graph, params.probabilities.get(), &matrix, hyperparameters.discountFactor);
+        
+        markovGenerator(
+            hyperparameters.graph, 
+            params.probabilities.get(), 
+            &matrix, 
+            hyperparameters.discountFactor);
+
         return std::make_shared<SparseMatrixSampleSquare>(matrix);
     }
+
     size_t getDimension() const override {
         return dimension;
     }
+
     bool isSPD() const override {
         return false;
     }
-    MarkovHistogramSampleDistribution(MarkovSampleParameters& parameters, MarkovSampleHyperparameters& hyperparameters) :
+
+    MarkovHistogramSampleDistribution(
+        MarkovSampleParameters& parameters, 
+        MarkovSampleHyperparameters& hyperparameters) :
         DistributionBase(parameters, hyperparameters), 
         dimension(lemon::countNodes(*hyperparameters.graph)) {
     }
@@ -483,7 +505,8 @@ void dgnAsymMarkov(int argc, char** argv) {
     if (argc > 0)
         preset = std::stoi(argv[0]);
 
-    auto [graph, probabilities] = generatePreset((GraphPreset)preset, gridSize);
+    auto [graph, probabilities] = generatePreset(
+        (GraphPreset)preset, gridSize);
 
     MarkovSampleParameters params;
     params.probabilities = std::move(probabilities);
@@ -493,18 +516,32 @@ void dgnAsymMarkov(int argc, char** argv) {
     hyperparams.samples = histogramSamples;
     hyperparams.discountFactor = discountFactor;
 
-    auto true_mat_dist = std::make_shared<MarkovHistogramSampleDistribution>(params, hyperparams);
-    auto problem_def = std::make_shared<ProblemDefType>(true_mat_dist);
+    auto true_mat_dist = std::make_shared<
+        MarkovHistogramSampleDistribution>(params, hyperparams);
+    auto problem_def = std::make_shared<
+        ProblemDefType>(true_mat_dist);
     auto diagnostics = DiagnosticsType(problem_def);
 
     // Naive run
     auto run = std::shared_ptr<ProblemRunType>(
-            new NaiveRun<MarkovSampleParameters, MarkovSampleHyperparameters>(problem_def.get()));
+            new NaiveRun<
+                MarkovSampleParameters, 
+                MarkovSampleHyperparameters>(problem_def.get()));
     run->numberSubRuns = numSubRunsNaive;
     diagnostics.addRun(run);
 
     run = std::shared_ptr<ProblemRunType>(
-            new OpshiftRun<MarkovSampleParameters, MarkovSampleHyperparameters>(problem_def.get()));
+            new ResidualOpshiftRun<
+                MarkovSampleParameters, 
+                MarkovSampleHyperparameters>(problem_def.get()));
+    run->numberSubRuns = numSubRuns;
+    run->samplesPerSubRun = samplesPerSubRun;
+    diagnostics.addRun(run);
+
+    run = std::shared_ptr<ProblemRunType>(
+            new ResidualOpshiftTruncatedRun<
+                MarkovSampleParameters, 
+                MarkovSampleHyperparameters>(problem_def.get(), 2));
     run->numberSubRuns = numSubRuns;
     run->samplesPerSubRun = samplesPerSubRun;
     diagnostics.addRun(run);

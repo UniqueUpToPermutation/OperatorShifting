@@ -452,7 +452,7 @@ namespace opshift {
         IInvertibleMatrixOperator* op_Ahat,
         const IMatrixDistribution* bootstrap_mat_dist,
         const IVectorDistribution* q_dist,
-        const IMatrixOperator* op_R,
+        const IInvertibleMatrixOperator* op_R,
         Eigen::VectorXd* output);
 
     void residualOpshift(
@@ -468,7 +468,7 @@ namespace opshift {
         double beta,
         const Eigen::VectorXd& rhs,
         IInvertibleMatrixOperator* op_Ahat,
-        const IMatrixOperator* op_R,
+        const IInvertibleMatrixOperator* op_R,
         Eigen::VectorXd* output);
 
     // Compute the standard shift factor
@@ -490,7 +490,7 @@ namespace opshift {
         IInvertibleMatrixOperator* op_Ahat,
         const IMatrixDistribution* bootstrap_mat_dist,
         const IVectorDistribution* q_dist,
-        const IMatrixOperator* op_R,
+        const IInvertibleMatrixOperator* op_R,
         Eigen::VectorXd* output);
 
     void residualOpshiftTruncated(

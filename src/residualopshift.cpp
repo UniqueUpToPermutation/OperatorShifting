@@ -74,7 +74,7 @@ namespace opshift {
         IInvertibleMatrixOperator* op_Ahat,
         const IMatrixDistribution* bootstrap_mat_dist,
         const IVectorDistribution* q_dist,
-        const IMatrixOperator* op_R,
+        const IInvertibleMatrixOperator* op_R,
         Eigen::VectorXd* output) {
 
         double beta = residualShiftFactor(
@@ -211,7 +211,7 @@ namespace opshift {
         IInvertibleMatrixOperator* op_Ahat,
         const IMatrixDistribution* bootstrap_mat_dist,
         const IVectorDistribution* q_dist,
-        const IMatrixOperator* op_R,
+        const IInvertibleMatrixOperator* op_R,
         Eigen::VectorXd* output) {
 
         double beta = residualShiftFactorTruncated(
@@ -234,6 +234,15 @@ namespace opshift {
         IInvertibleMatrixOperator* op_Ahat,
         const IMatrixDistribution* bootstrap_mat_dist,
         Eigen::VectorXd* output) {
-
+        residualOpshiftTruncated(
+            num_system_samples,
+            num_per_system_samples,
+            rhs,
+            order,
+            op_Ahat,
+            bootstrap_mat_dist,
+            nullptr,
+            nullptr,
+            output);
     }
 }
