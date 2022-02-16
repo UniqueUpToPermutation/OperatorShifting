@@ -155,6 +155,12 @@ namespace opshift {
         bool isIdentity() const override;
     };
 
+    struct ShiftParams {
+        int num_system_samples = 25;
+        int num_per_system_samples = 25;
+        int order = 2;
+    };
+
     // Window Functions
     double softWindowFuncNumerator(int N, int k);
     double hardWindowFuncNumerator(int N, int k);
@@ -436,8 +442,7 @@ namespace opshift {
         int dimension,
         IInvertibleMatrixOperator* op_Ahat,
         const IMatrixDistribution* bootstrap_mat_dist,
-        const IVectorDistribution* q_dist,
-        const IMatrixOperator* op_R);
+        const IVectorDistribution* q_dist);
 
     // Perform standard operator shifting
     void residualOpshift(
@@ -464,5 +469,36 @@ namespace opshift {
         const Eigen::VectorXd& rhs,
         IInvertibleMatrixOperator* op_Ahat,
         const IMatrixOperator* op_R,
+        Eigen::VectorXd* output);
+
+    // Compute the standard shift factor
+    double residualShiftFactorTruncated(
+        int num_system_samples,
+        int num_per_system_samples,
+        int dimension,
+        int order,
+        IInvertibleMatrixOperator* op_Ahat,
+        const IMatrixDistribution* bootstrap_mat_dist,
+        const IVectorDistribution* q_dist);
+
+    // Perform standard operator shifting
+    void residualOpshiftTruncated(
+        int num_system_samples,
+        int num_per_system_samples,
+        const Eigen::VectorXd& rhs,
+        int order,
+        IInvertibleMatrixOperator* op_Ahat,
+        const IMatrixDistribution* bootstrap_mat_dist,
+        const IVectorDistribution* q_dist,
+        const IMatrixOperator* op_R,
+        Eigen::VectorXd* output);
+
+    void residualOpshiftTruncated(
+        int num_system_samples,
+        int num_per_system_samples,
+        const Eigen::VectorXd& rhs,
+        int order,
+        IInvertibleMatrixOperator* op_Ahat,
+        const IMatrixDistribution* bootstrap_mat_dist,
         Eigen::VectorXd* output);
 }
