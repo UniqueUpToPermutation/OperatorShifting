@@ -1,6 +1,6 @@
-# C++ Operator Augmentation
+# Operator Shifting
 
-This is a small testbed of problems for the operator shifting technique (formerly referred to as operator augmentation). All the methods in our two papers **Operator Shifting for
+This is a small testbed of problems for the operator shifting technique (formerly referred to as operator shifting). All the methods in our two papers **Operator Shifting for
 Noisy Elliptic Systems** [(Preprint)](https://arxiv.org/abs/2010.09656) and **Operator Shifting for General Noisy Matrix Systems** [(Preprint)](https://arxiv.org/pdf/2104.11294.pdf) implemented herein.
 
 ![GitHub Logo](images/Diagram.png)
@@ -15,7 +15,7 @@ Noisy Elliptic Systems** [(Preprint)](https://arxiv.org/abs/2010.09656) and **Op
 
 To update the configuration, please see config.json, make sure that config.json is in the same directory as your binary. The application will load all of its configuration from the config.json. cmake will copy the config.json to the output directory by default. 
 
-We provide four examples of how operator augmentation may be used to improve accuracy when solving noisy elliptic systems, and one example for solving noisy general linear systems. These testbeds are:
+We provide four examples of how operator shifting may be used to improve accuracy when solving noisy elliptic systems, and one example for solving noisy general linear systems. These testbeds are:
 
 * **GridLaplacian1D**: (Elliptic) A 1D grid Laplacian system corrupted by noise. The source for this testbed can be found in **tests/gridLaplacian1D**.
     * This testbed has the following configuration properties:
@@ -57,8 +57,8 @@ We provide four examples of how operator augmentation may be used to improve acc
 * The following configuration properties are shared by all testbeds:
     * **threadCount**: The number of threads to use for the computation.
     * **numSubRunsNaive**: The number of Monte Carlo samples to use for determining the error of the naive method.
-    * **numSubRuns**: The number of Monte Carlo samples to use for determining the error of the augmentation methods.
-    * **samplesPerSubRun**: For each Monte Carlo sample used to determine the error of the augmentation methods, we must compute an augmentation factor. This is the number of samples that is used to compute the augmentation factor.
+    * **numSubRuns**: The number of Monte Carlo samples to use for determining the error of the shifting methods.
+    * **samplesPerSubRun**: For each Monte Carlo sample used to determine the error of the shifting methods, we must compute a shift factor. This is the number of samples that is used to compute the shift factor.
 
 The configuration of each of these examples is stored in the relevant section of *config.json*.
 
@@ -116,7 +116,7 @@ public:
 * The **preprocess** method will be called once, and you should use it to pre-factorize the operator so that it can be efficiently applied later.
 * The **solve** method applies the inverse of **A** to the vector **b** and stores the result in **result**.
 
-Finally, there are also the **IVectorDistribution** **IVectorPairDistribution** interface. These interfaces are used for drawing vectors to efficiently compute operator traces via Monte Carlo as described in the paper. Standard operator augmentation uses the **IVectorPairDistribution** interface, as in the paper, it requires random vector samples **q** for the numerator of the augmentation factor and **u** for the denominator. Our other augmentation methods only require random vector samples **q** and therefore use the **IVectorDistribution** interface instead of the **IVectorPairDistribution** interface.
+Finally, there are also the **IVectorDistribution** **IVectorPairDistribution** interface. These interfaces are used for drawing vectors to efficiently compute operator traces via Monte Carlo as described in the paper. Standard operator shifting uses the **IVectorPairDistribution** interface, as in the paper, it requires random vector samples **q** for the numerator of the shifting factor and **u** for the denominator. Our other shifting methods only require random vector samples **q** and therefore use the **IVectorDistribution** interface instead of the **IVectorPairDistribution** interface.
 
 ```cpp
 class IVectorDistribution
@@ -135,31 +135,23 @@ public:
 
 Note that in some cases, for **IVectorPairDistribution**, the samples for **q** and **u** may be the same. In this case, to avoid additional unnecessary computation, one should override the **areEqual** property to **true**, and otherwise, it should be **false**.
 
-Finally, we note that every operator augmentation method has three accompanying functions:
+## General Operator Shifting (GS; Elliptic)
+
+The first method we support is general operator shifting, as described in algorithm (5.1) of our paper.
 
 ```cpp
-void [AugmentationShorthand](...)
-double [AugmentationShorthand]Fac(...)
-void pre[AugmentationShorthand](...)
-```
-
-The first will perform the whole operator augmentation pipeline from start to finish and output an estimate of the true solution **x** to the noisy system. The second just computes the augmentation factor for a bootstrapped noisy elliptic system. The third augments a noisy elliptic system given an augmentation factor.
-
-## General Semi-Bayesian Operator Augmentation (AG)
-
-The first method we support is general semi-Bayesian operator augmentation, as described in algorithm (5.1) of our paper.
-
-```cpp
-void aug(int num_system_samples,
+void opshift(
+    int num_system_samples,
     int num_per_system_samples,
-    const Eigen::VectorXd& rhs,
-    IInvertibleMatrixOperator* op_Ahat,
-    const IMatrixDistribution* bootstrap_mat_dist,
-    Eigen::VectorXd* output);
+    const Eigen::VectorXd &rhs,
+    IInvertibleMatrixOperator *op_Ahat,
+    const IMatrixDistribution *bootstrap_mat_dist,
+    Eigen::VectorXd *output);
 ```
 
 ```cpp
-void aug(int num_system_samples,
+void opshift(
+    int num_system_samples,
     int num_per_system_samples,
     const Eigen::VectorXd& rhs,
     IInvertibleMatrixOperator* op_Ahat,
@@ -172,8 +164,8 @@ void aug(int num_system_samples,
 
 These functions take the following parameters:
 
-* **num_system_samples**: The number of Monte Carlo samples to use to compute the augmentation factor.
-* **num_per_system_samples**: All of the system samples above require a matrix inversion. However, we can reduce sampling error by sharing inverses across multiple samples (i.e., the number of samples *per system*). This parameter specifies the number of times a matrix inverse is reused across samples. Note that doing this still gives a consistent estimator of the augmentation factor.
+* **num_system_samples**: The number of Monte Carlo samples to use to compute the shift factor.
+* **num_per_system_samples**: All of the system samples above require a matrix inversion. However, we can reduce sampling error by sharing inverses across multiple samples (i.e., the number of samples *per system*). This parameter specifies the number of times a matrix inverse is reused across samples. Note that doing this still gives a consistent estimator of the shift factor.
 * **rhs**: The right hand side **b** of the noisy elliptic system **Ax = b**.
 * **op_Ahat**: The operator **A** observed from data.
 * **bootstrap_mat_dist**: A bootstrapped distribution for the random matrix **A**.
@@ -182,34 +174,36 @@ These functions take the following parameters:
 * **op_B**: The operator **B** as described in algorithm (5.1). Defaults to the identity.
 * **output**: A pointer to where the estimate of the vector **x** should be written to.
 
-## Energy-Norm Operator Augmentation (EAG)
+## Energy Operator Shifting (ES; Elliptic)
 
-This method performs operator augmentation in the energy norm as described in section (6) and meta-algorithm (7.1). The polynomial expression for the augmentation factor is not truncated.
+This method performs operator shifting in the energy norm as described in section (6) and meta-algorithm (7.1). The polynomial expression for the shifting factor is not truncated.
 
 ```cpp
-void enAug(int num_system_samples,
+void energyOpshift(
+    int num_system_samples,
     int num_per_system_samples,
-    const Eigen::VectorXd& rhs,
-    IInvertibleMatrixOperator* op_Ahat,
-    const IMatrixDistribution* bootstrap_mat_dist,
-    Eigen::VectorXd* output);
+    const Eigen::VectorXd &rhs,
+    IInvertibleMatrixOperator *op_Ahat,
+    const IMatrixDistribution *bootstrap_mat_dist,
+    Eigen::VectorXd *output);
 ```
 
 ```cpp
-void enAug(int num_system_samples,
+void energyOpshift(
+    int num_system_samples,
     int num_per_system_samples,
-    const Eigen::VectorXd& rhs,
-    IInvertibleMatrixOperator* op_Ahat,
-    const IMatrixDistribution* bootstrap_mat_dist,
-    const IVectorDistribution* q_dist,
-    const IMatrixOperator* op_C,
-    Eigen::VectorXd* output);
+    const Eigen::VectorXd &rhs,
+    IInvertibleMatrixOperator *op_Ahat,
+    const IMatrixDistribution *bootstrap_mat_dist,
+    const IVectorDistribution *q_dist,
+    const IMatrixOperator *op_C,
+    Eigen::VectorXd *output);
 ```
 
 These functions take the following parameters:
 
-* **num_system_samples**: The number of Monte Carlo samples to use to compute the augmentation factor.
-* **num_per_system_samples**: All of the system samples above require a matrix inversion. However, we can reduce sampling error by sharing inverses across multiple samples (i.e., the number of samples *per system*). This parameter specifies the number of times a matrix inverse is reused across samples. Note that doing this still gives a consistent estimator of the augmentation factor.
+* **num_system_samples**: The number of Monte Carlo samples to use to compute the shift factor.
+* **num_per_system_samples**: All of the system samples above require a matrix inversion. However, we can reduce sampling error by sharing inverses across multiple samples (i.e., the number of samples *per system*). This parameter specifies the number of times a matrix inverse is reused across samples. Note that doing this still gives a consistent estimator of the shift factor.
 * **rhs**: The right hand side **b** of the noisy elliptic system **Ax = b**.
 * **op_Ahat**: The operator **A** observed from data.
 * **bootstrap_mat_dist**: A bootstrapped distribution for the random matrix **A**.
@@ -217,112 +211,94 @@ These functions take the following parameters:
 * **op_C**: The operator **C** as described in algorithm (7.1). Defaults to the identity.
 * **output**: A pointer to where the estimate of the vector **x** should be written to.
 
-## Truncated Energy-Norm Operator Augmentation (T-EAG)
+## Truncated Energy Operator Shifting (ES-T; Elliptic)
 
-This method performs operator augmentation in the energy norm as described in section (7) and meta-algorithm (7.1). The polynomial expression for the augmentation factor is truncated to the specified order and with the specified windowing function.
+This method performs operator shifting in the energy norm as described in section (7) and meta-algorithm (7.1). The polynomial expression for the shift factor is truncated to the specified order and with the specified windowing function.
 
 ```cpp
-void enAugTrunc(int num_system_samples,
+void energyOpshiftTruncated(
+    int num_system_samples,
     int num_per_system_samples,
-    const Eigen::VectorXd& rhs,
+    const Eigen::VectorXd &rhs,
     int order,
-    IInvertibleMatrixOperator* op_Ahat,
-    const IMatrixDistribution* bootstrap_mat_dist,
-    Eigen::VectorXd* output);
+    IInvertibleMatrixOperator *op_Ahat,
+    const IMatrixDistribution *bootstrap_mat_dist,
+    Eigen::VectorXd *output);
 ```
 ```cpp
-void enAugTrunc(int num_system_samples,
+void energyOpshiftTruncated(
+    int num_system_samples,
     int num_per_system_samples,
-    const Eigen::VectorXd& rhs,
+    const Eigen::VectorXd &rhs,
     int order,
-    IInvertibleMatrixOperator* op_Ahat,
-    const IMatrixDistribution* bootstrap_mat_dist,
-    const IVectorDistribution* q_dist,
-    const IMatrixOperator* op_C,
-    Eigen::VectorXd* output);
-```
-
-```cpp
-void enAugTrunc(int num_system_samples,
-    int num_per_system_samples,
-    const Eigen::VectorXd& rhs,
-    int order,
-    IInvertibleMatrixOperator* op_Ahat,
-    const IMatrixDistribution* bootstrap_mat_dist,
-    std::function<double(int, int)>& window_func_numerator,
-    std::function<double(int, int)>& window_func_denominator,
-    Eigen::VectorXd* output);
+    IInvertibleMatrixOperator *op_Ahat,
+    const IMatrixDistribution *bootstrap_mat_dist,
+    const IVectorDistribution *q_dist,
+    const IMatrixOperator *op_C,
+    Eigen::VectorXd *output);
 ```
 
 ```cpp
-void enAugTrunc(int num_system_samples,
+void energyOpshiftTruncated(
+    int num_system_samples,
     int num_per_system_samples,
-    const Eigen::VectorXd& rhs,
+    const Eigen::VectorXd &rhs,
     int order,
-    IInvertibleMatrixOperator* op_Ahat,
-    const IMatrixDistribution* bootstrap_mat_dist,
-    const IVectorDistribution* q_dist,
-    const IMatrixOperator* op_C,
-    std::function<double(int, int)>& window_func_numerator,
-    std::function<double(int, int)>& window_func_denominator,
-    Eigen::VectorXd* output);
+    IInvertibleMatrixOperator *op_Ahat,
+    const IMatrixDistribution *bootstrap_mat_dist,
+    std::function<double(int, int)> &window_func_numerator,
+    std::function<double(int, int)> &window_func_denominator,
+    Eigen::VectorXd *output);
 ```
 
-* **num_system_samples**: The number of Monte Carlo samples to use to compute the augmentation factor.
-* **num_per_system_samples**: All of the system samples above require a matrix inversion. However, we can reduce sampling error by sharing inverses across multiple samples (i.e., the number of samples *per system*). This parameter specifies the number of times a matrix inverse is reused across samples. Note that doing this still gives a consistent estimator of the augmentation factor.
+```cpp
+void energyOpshiftTruncated(
+    int num_system_samples,
+    int num_per_system_samples,
+    const Eigen::VectorXd &rhs,
+    int order,
+    IInvertibleMatrixOperator *op_Ahat,
+    const IMatrixDistribution *bootstrap_mat_dist,
+    const IVectorDistribution *q_dist,
+    const IMatrixOperator *op_C,
+    std::function<double(int, int)> &window_func_numerator,
+    std::function<double(int, int)> &window_func_denominator,
+    Eigen::VectorXd *output);
+```
+
+* **num_system_samples**: The number of Monte Carlo samples to use to compute the shift factor.
+* **num_per_system_samples**: All of the system samples above require a matrix inversion. However, we can reduce sampling error by sharing inverses across multiple samples (i.e., the number of samples *per system*). This parameter specifies the number of times a matrix inverse is reused across samples. Note that doing this still gives a consistent estimator of the shift factor.
 * **rhs**: The right hand side **b** of the noisy elliptic system **Ax = b**.
 * **order**: The order of the truncation.
 * **op_Ahat**: The operator **A** observed from data.
 * **bootstrap_mat_dist**: A bootstrapped distribution for the random matrix **A**.
 * **q_dist**: A distribution for drawing samples of the random vectors **q** as described in algorithm (7.1). This distribution depends on the choice of **C**. If **C**  is the identity, then the default is just to sample from a standard multivariate normal distribution.
 * **op_C**: The operator **C** as described in algorithm (7.1). Defaults to the identity.
-* **window_func_numerator**: The windowing function to use for the numerator of the truncated augmentation factor expression. You may use **softWindowFuncNumerator** or **hardWindowFuncNumerator** for the soft/hard windowing functions presented respectively. Defaults to soft windowing function.
-* **window_func_denominator**: The windowing function to use for the denominator of the truncated augmentation factor expression. You may use **softWindowFuncDenominator** or **hardWindowFuncDenominator** for the soft/hard windowing functions presented respectively. Defaults to soft windowing function.
+* **window_func_numerator**: The windowing function to use for the numerator of the truncated shift factor expression. You may use **softWindowFuncNumerator** or **hardWindowFuncNumerator** for the soft/hard windowing functions presented respectively. Defaults to soft windowing function.
+* **window_func_denominator**: The windowing function to use for the denominator of the truncated shift factor expression. You may use **softWindowFuncDenominator** or **hardWindowFuncDenominator** for the soft/hard windowing functions presented respectively. Defaults to soft windowing function.
 * **output**: A pointer to where the estimate of the vector **x** should be written to.
 
-## Accelerated Shifted Truncated Energy-Norm Augmentation (AST-EAG)
+## Truncated Rebased Accelerated Energy Operator Shifting (ES-TRA; Elliptic)
 
-This method performs an accelerated version of truncated operator augmentation with a shifted base-point, as described in algorithm (9.1)
-
-```cpp
-void enAugAccelShiftTrunc(int num_system_samples,
-    int num_per_system_samples,
-    const Eigen::VectorXd& rhs,
-    int order,
-    double eps,
-    IInvertibleMatrixOperator* op_Ahat,
-    const IMatrixDistribution* bootstrap_mat_dist,
-    Eigen::VectorXd* output);
-```
+This method performs an accelerated version of truncated operator shifting with a shifted base-point, as described in algorithm (9.1)
 
 ```cpp
-void enAugAccelShiftTrunc(int num_system_samples,
+double energyShiftFactorTruncatedRebasedAccel(
+    int num_system_samples,
     int num_per_system_samples,
-    const Eigen::VectorXd& rhs,
+    int dimension,
     int order,
     double eps,
     IInvertibleMatrixOperator* op_Ahat,
     const IMatrixDistribution* bootstrap_mat_dist,
     const IVectorDistribution* q_dist,
-    const IMatrixOperator* op_C,
-    Eigen::VectorXd* output);
-```
-
-```cpp
-void enAugAccelShiftTrunc(int num_system_samples,
-    int num_per_system_samples,
-    const Eigen::VectorXd& rhs,
-    int order,
-    double eps,
-    IInvertibleMatrixOperator* op_Ahat,
-    const IMatrixDistribution* bootstrap_mat_dist,
     std::function<double(int, int, double)>& window_func_numerator,
-    std::function<double(int, int, double)>& window_func_denominator,
-    Eigen::VectorXd* output);
+    std::function<double(int, int, double)>& window_func_denominator);
 ```
 
 ```cpp
-void enAugAccelShiftTrunc(int num_system_samples,
+void energyOpshiftTruncatedRebasedAccel(
+    int num_system_samples,
     int num_per_system_samples,
     const Eigen::VectorXd& rhs,
     int order,
@@ -336,8 +312,48 @@ void enAugAccelShiftTrunc(int num_system_samples,
     Eigen::VectorXd* output);
 ```
 
-* **num_system_samples**: The number of Monte Carlo samples to use to compute the augmentation factor.
-* **num_per_system_samples**: All of the system samples above require a matrix inversion. However, we can reduce sampling error by sharing inverses across multiple samples (i.e., the number of samples *per system*). This parameter specifies the number of times a matrix inverse is reused across samples. Note that doing this still gives a consistent estimator of the augmentation factor.
+```cpp
+void energyOpshiftTruncatedRebasedAccel(
+    int num_system_samples,
+    int num_per_system_samples,
+    const Eigen::VectorXd& rhs,
+    int order,
+    double eps,
+    IInvertibleMatrixOperator* op_Ahat,
+    const IMatrixDistribution* bootstrap_mat_dist,
+    const IVectorDistribution* q_dist,
+    const IMatrixOperator* op_C,
+    Eigen::VectorXd* output);
+```
+
+```cpp
+void energyOpshiftTruncatedRebasedAccel(
+    int num_system_samples,
+    int num_per_system_samples,
+    const Eigen::VectorXd& rhs,
+    int order,
+    double eps,
+    IInvertibleMatrixOperator* op_Ahat,
+    const IMatrixDistribution* bootstrap_mat_dist,
+    Eigen::VectorXd* output);
+```
+
+```cpp
+void energyOpshiftTruncatedRebasedAccel(
+    int num_system_samples,
+    int num_per_system_samples,
+    const Eigen::VectorXd& rhs,
+    int order,
+    double eps,
+    IInvertibleMatrixOperator* op_Ahat,
+    const IMatrixDistribution* bootstrap_mat_dist,
+    std::function<double(int, int, double)>& window_func_numerator,
+    std::function<double(int, int, double)>& window_func_denominator,
+    Eigen::VectorXd* output);
+```
+
+* **num_system_samples**: The number of Monte Carlo samples to use to compute the shift factor.
+* **num_per_system_samples**: All of the system samples above require a matrix inversion. However, we can reduce sampling error by sharing inverses across multiple samples (i.e., the number of samples *per system*). This parameter specifies the number of times a matrix inverse is reused across samples. Note that doing this still gives a consistent estimator of the shift factor.
 * **rhs**: The right hand side **b** of the noisy elliptic system **Ax = b**.
 * **eps**: Stops the power method computation when the result changes by less than a factor of **eps**.
 * **order**: The order of the truncation.
@@ -345,13 +361,77 @@ void enAugAccelShiftTrunc(int num_system_samples,
 * **bootstrap_mat_dist**: A bootstrapped distribution for the random matrix **A**.
 * **q_dist**: A distribution for drawing samples of the random vectors **q** as described in algorithm (7.1). This distribution depends on the choice of **C**. If **C**  is the identity, then the default is just to sample from a standard multivariate normal distribution.
 * **op_C**: The operator **C** as described in algorithm (7.1). Defaults to the identity.
-* **window_func_numerator**: The windowing function to use for the numerator of the truncated augmentation factor expression. You may use **softWindowFuncNumerator** or **hardWindowFuncNumerator** for the soft/hard windowing functions presented respectively. Defaults to soft windowing function.
-* **window_func_denominator**: The windowing function to use for the denominator of the truncated augmentation factor expression. You may use **softWindowFuncDenominator** or **hardWindowFuncDenominator** for the soft/hard windowing functions presented respectively. Defaults to soft windowing function.
+* **window_func_numerator**: The windowing function to use for the numerator of the truncated shift factor expression. You may use **softWindowFuncNumerator** or **hardWindowFuncNumerator** for the soft/hard windowing functions presented respectively. Defaults to soft windowing function.
+* **window_func_denominator**: The windowing function to use for the denominator of the truncated shift factor expression. You may use **softWindowFuncDenominator** or **hardWindowFuncDenominator** for the soft/hard windowing functions presented respectively. Defaults to soft windowing function.
 * **output**: A pointer to where the estimate of the vector **x** should be written to.
+
+## Residual Operator Shifting (RS; Non-Elliptic)
+
+This algorithm is an implementation of our operator shifting method from our non-elliptic paper. 
+
+```cpp
+void residualOpshift(
+    int num_system_samples,
+    int num_per_system_samples,
+    const Eigen::VectorXd& rhs,
+    IInvertibleMatrixOperator* op_Ahat,
+    const IMatrixDistribution* bootstrap_mat_dist,
+    Eigen::VectorXd* output);
+```
+
+```cpp
+void residualOpshift(
+    int num_system_samples,
+    int num_per_system_samples,
+    const Eigen::VectorXd& rhs,
+    IInvertibleMatrixOperator* op_Ahat,
+    const IMatrixDistribution* bootstrap_mat_dist,
+    const IVectorDistribution* q_dist,
+    const IInvertibleMatrixOperator* op_R,
+    Eigen::VectorXd* output);
+```
+
+* **num_system_samples**: The number of Monte Carlo samples to use to compute the shift factor.
+* **num_per_system_samples**: All of the system samples above require a matrix inversion. However, we can reduce sampling error by sharing inverses across multiple samples (i.e., the number of samples *per system*). This parameter specifies the number of times a matrix inverse is reused across samples. Note that doing this still gives a consistent estimator of the shift factor.
+* **rhs**: The right hand side **b** of the noisy elliptic system **Ax = b**.
+* **bootstrap_mat_dist**: A bootstrapped distribution for the random matrix **A**.
+* **q_dist**: A distribution for drawing samples of the random vectors **q** as described in section 8 of our non-elliptic paper. The second moment of **q** should be **R^-1**. If **R** is not specified, then the default is just to sample from a standard multivariate normal distribution.
+* **op_R**: The operator **R**.
+* **output**: A pointer to where the estimate of the vector **x** should be written to.
+
+## Truncated Residual Operator Shifting (RS-T; Non-Elliptic)
+
+Just like the above, except uses a Taylor approximation when computing Monte Carlo samples.
+
+```cpp
+void residualOpshiftTruncated(
+    int num_system_samples,
+    int num_per_system_samples,
+    const Eigen::VectorXd& rhs,
+    int order,
+    IInvertibleMatrixOperator* op_Ahat,
+    const IMatrixDistribution* bootstrap_mat_dist,
+    const IVectorDistribution* q_dist,
+    const IInvertibleMatrixOperator* op_R,
+    Eigen::VectorXd* output);
+```
+
+```cpp
+void residualOpshiftTruncated(
+    int num_system_samples,
+    int num_per_system_samples,
+    const Eigen::VectorXd& rhs,
+    int order,
+    IInvertibleMatrixOperator* op_Ahat,
+    const IMatrixDistribution* bootstrap_mat_dist,
+    Eigen::VectorXd* output);
+```
+
+* **order**: The order of the Taylor expansion. Currently only second order is supported.
 
 # The Diagnostics Framework
 
-We also provide a framework for testing the effectiveness of our methods in the files **diagnostics.cpp** and **diagnostics.h**. This diagnostics framework can be used to replicate our results as well as easily test the operator augmentation method on new problems.
+We also provide a framework for testing the effectiveness of our methods in the files **diagnostics.cpp** and **diagnostics.h**. This diagnostics framework can be used to replicate our results as well as easily test the operator shifting method on new problems.
 
 ## The Problem Interface
 
@@ -413,12 +493,12 @@ auto problem_def = std::shared_ptr<
 auto diagnostics = Diagnostics<ParameterType, HyperparameterType>(problem_def);
 ```
 
-Afterwards, you can specify which of our methods you would like to test by passing a list of **ProblemRun** instances to the **Diagnostics** class. For example, to test the AG method, use:
+Afterwards, you can specify which of our methods you would like to test by passing a list of **ProblemRun** instances to the **Diagnostics** class. For example, to test the GS method, use:
 
 ```cpp
 run = std::shared_ptr<
     ProblemRun<ParameterType, HyperparameterType>>(
-        new AugmentationRun<ParameterType, HyperparameterType>(
+        new OpshiftRun<ParameterType, HyperparameterType>(
             problem_def.get());
 
 run->numberSubRuns = numSubRuns;
@@ -443,7 +523,3 @@ All of the provided testbeds are implemented using this framework, so see the so
 We include the two graphs that we used in our paper for the graph Laplacian examples. They are located in **Graphs/**. These graphs were taken from the [Network Repository](http://networkrepository.com). Below is a rendering of the **fb-pages-food** graph:
 
 ![fb-pages-food](images/fb-pages-food.png)
-
-# Python Version
-
-A Python version of this code is available [here](https://github.com/UniqueUpToPermutation/OperatorAugmentationPython).
