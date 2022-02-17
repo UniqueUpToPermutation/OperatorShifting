@@ -1,7 +1,7 @@
 # C++ Operator Augmentation
 
-This is a small testbed of problem for operator augmentation. All the methods in our paper [Operator Augmentation for
-Noisy Elliptic Systems](https://arxiv.org/abs/2010.09656) are implemented herein.
+This is a small testbed of problems for the operator shifting technique (formerly referred to as operator augmentation). All the methods in our two papers **Operator Shifting for
+Noisy Elliptic Systems** [(Preprint)](https://arxiv.org/abs/2010.09656) and **Operator Shifting for General Noisy Matrix Systems** [(Preprint)](https://arxiv.org/pdf/2104.11294.pdf) implemented herein.
 
 ![GitHub Logo](images/Diagram.png)
 
@@ -13,32 +13,47 @@ Noisy Elliptic Systems](https://arxiv.org/abs/2010.09656) are implemented herein
 
 # Configuration
 
-To update the configuration, please see config.json, make sure that config.json is in the same directory as your binary. The application will load all of its configuration from the config.json.
+To update the configuration, please see config.json, make sure that config.json is in the same directory as your binary. The application will load all of its configuration from the config.json. cmake will copy the config.json to the output directory by default. 
 
-We provide four examples of how operator augmentation may be used to improve accuracy when solving noisy elliptic systems. These testbeds are:
+We provide four examples of how operator augmentation may be used to improve accuracy when solving noisy elliptic systems, and one example for solving noisy general linear systems. These testbeds are:
 
-* **GridLaplacian1D**: A 1D grid Laplacian system corrupted by noise. The source for this testbed can be found in **dgnGridLaplacian1D.cpp**.
+* **GridLaplacian1D**: (Elliptic) A 1D grid Laplacian system corrupted by noise. The source for this testbed can be found in **tests/gridLaplacian1D**.
     * This testbed has the following configuration properties:
         * **gridSize**: Number of vertices of the grid graph.
         * **stdDev**: The standard deviation of the random variable used to perturb the edge weights. (See paper for details)
         * **distribution**: Specifies the distribution of the random variable used to perturb the edge weights. Can be either *discrete* or *gamma*. (See paper for details)
-* **GridLaplacian2D**: A 2D grid Laplacian system corrupted by noise. The source for this testbed can be found in **dgnGridLaplacian2D.cpp**.
+* **GridLaplacian2D**: (Elliptic) A 2D grid Laplacian system corrupted by noise. The source for this testbed can be found in **tests/gridLaplacian2D**.
     * This testbed has the following configuration properties:
         * **gridSize**: Number of vertices of the grid graph.
         * **stdDev**: The standard deviation of the random variable used to perturb the edge weights. (See paper for details)
         * **distribution**: Specifies the distribution of the random variable used to perturb the edge weights. Can be either *discrete* or *gamma*. (See paper for details)
-* **GraphEdgePerturb**: A Laplacian system on a graph where the edge weights have been corrupted by noise. The source for this testbed can be found in **dgnGraphEdgePerturb.cpp**.
+* **GraphEdgePerturb**: (Elliptic) A Laplacian system on a graph where the edge weights have been corrupted by noise. The source for this testbed can be found in **tests/graphEdgePerturb**.
     * This testbed has the following configuration properties:
         * **stdDev**: The standard deviation of the random variable used to perturb the edge weights. (See paper for details)
         * **distribution**: Specifies the distribution of the random variable used to perturb the edge weights. Can be either *discrete* or *gamma*. (See paper for details)
         * **graphSrc** : The edge list of the graph to run the test on.
         * **format** : Whether the edge list above is in *unweighted* or *weighted* format. If the format is *unweighted*, weights for the graph will randomly be generated.
         * **boundary**: Specifies a list of node IDs to be set as the boundary of the Laplacian system. (See paper for details)
-* **GraphEdgeDrop**: A Laplacian system on a graph where some of the edges have been deleted from the graph. The source for this testbed can be found in **dgnGraphEdgeDrop.cpp**.
+* **GraphEdgeDrop**: (Elliptic) A Laplacian system on a graph where some of the edges have been deleted from the graph. The source for this testbed can be found in **tests/graphEdgeDrop**.
     * This testbed has the following configuration properties:
         * **graphSrc** : The edge list of the graph to run the test on.
         * **format** : Whether the edge list above is in *unweighted* or *weighted* format. If the format is *unweighted*, weights for the graph will randomly be generated.
         * **boundary**: Specifies a list of node IDs to be set as the boundary of the Laplacian system. (See paper for details)
+* **AsymMarkov**: (Non-elliptic) A selection of value function estimation problems, where the underlying Markov chain is subject to sampling noise. The source for this testbed can be found in **tests/asymMarkov**.
+    * This testbed has the following configuration properties:
+        * **preset**: Determines the properties of the underlying Markov chain. The current presents are:
+          *  **0**: *(P1D_1d4_1d4)* A 1D Markov chain on a grid with a 1/4 probability of moving right and a 1/4 probability of moving left each iteration.
+          * **1**: *(P1D_1d6_2d6)* Like the above, but with a 2/6 probability of right and 1/6 probability of left.
+          * **2**: *(P1D_0_1d2)* Like the above, but with a 1/2 probability of right and 0 probability of left.
+          * **3**: *(P1D_1d8_1d8_1d8_1d8)* A 1D Markov chain on a grid with 1/8 probability of moving 2 spaces left, 1/8 probability of moving 2 spaces right, and 1/8 probability of moving 1 space left/right respectively.
+          * **4**: *(P1D_complete)* A Markov chain on the complete graph.
+          * **5**: *(P2D_unif)* A Markov chain on the 2D grid with equal probabilities of moving to any adjacent vertex.
+          * **6**: *(P2D_nonunif)* A Markov chain on the 2D grid with probabilities that vary based on the location in the grid.
+          * **7**: *(P3D_unif)* Like the above, but for 3D.
+          * **8**: *(P3D_nonunif)* Like the above, but for 3D.
+        * **histogramSamples**: The number of samples to take for each row of the probability transition matrix.
+        * **gridSize** : The size of the Markov chain.
+        * **discountFactor** : The discount factor to use when computing the value function.
 * The following configuration properties are shared by all testbeds:
     * **threadCount**: The number of threads to use for the computation.
     * **numSubRunsNaive**: The number of Monte Carlo samples to use for determining the error of the naive method.
@@ -49,41 +64,34 @@ The configuration of each of these examples is stored in the relevant section of
 
 # Running the Examples
 
-Once you have configured the application parameters to your liking, you are free to run the relevant tests by compiling the program with cmake and then calling
+We have tested these examples on Linux with GCC. Other platforms may work but are not necessarily supported. Use cmake to generate Makefiles and then call make to compile.
 
-```bash
-./OperatorAugmentationCPP [TestBedName]
-```
-
-on the resulting executable, where **TestBedName** may be one of **GridLaplacian1D**, **GridLaplacian2D**, **GraphEdgePerturb**, **GraphEdgeDrop**. The program will then run a gauntlet of tests for different methods proposed in our paper and output a comparison between them.
+The build should output binaries for all tests to the build directory, from which you can run the corresponding test.
 
 # Code Structure and Usage
 
 At a high level, the code is split into two parts:
 
-* **Operator Augmentation**: The actual code that implements the methods we present in our paper is in **augmentation.cpp** and **augmentation.h**.
-* **Diagnostics**: These are helper functions to accelerate the process of testing the operator augmentation framework on new examples. These are implemented in **diagnostics.cpp** and **diagnostics.h**.
+* **Operator Shifting**: The actual code that implements the methods we present in our paper is in **opshift.cpp** and **opshift.h**.
+* **Diagnostics**: These are helper functions to accelerate the process of testing the operator shifting framework on new examples. These are implemented in **diagnostics.cpp** and **diagnostics.h**.
 
-## Operator Augmentation Interface
+## Operator Shifting Interface
 
-Here we detail the interface that the augmentation algorithms in **augmentation.cpp** expose to the end user.
+Here we detail the interface that the shifting algorithms in **opshift.cpp** expose to the end user.
 
 ### Interfaces for Matrices and Distributions
 
-The setting of operator augmentation requires the user to specify a parameterized matrix distribution. In the code, this is done by inheriting from the **IMatrixDistribution** interface:
+The setting of operator shifting requires the user to specify a parameterized matrix distribution. In the code, this is done by inheriting from the **IMatrixDistribution** interface:
 
 ```cpp
 class IMatrixDistribution
 {
 public:
     virtual void drawSample(std::shared_ptr<IInvertibleMatrixOperator>* Ahat) const = 0;
-    virtual void drawDualSample(std::shared_ptr<IInvertibleMatrixOperator>* Ahat,
-                        std::shared_ptr<IMatrixOperator>* Mhat) const;
-    virtual bool isDualDistribution() const;
 };
 ```
 
-For a noisy elliptic system of the form **Ax = b**, you only need to override the **drawSample** method to provide a sample of **A** from a bootstrapped matrix distribution estimated from data. Note that the distribution also exposes **drawDualSample** and **isDualDistribution** - only override these if the system you are solving is of the form **Ax = Mb** where both **A** and **M** are random and potentially dependent. We call the latter setting the **auxiliary augmentation** setting and augmentation methods for the latter case are implemented in the files with an **aux**. However, these are entirely experimental.
+For a noisy elliptic system of the form **Ax = b**, you only need to override the **drawSample** method to provide a sample of **A** from a bootstrapped matrix distribution estimated from data.
 
 The matrix **A** is represented by the **IInvertibleMatrixOperator** interface, which has the form
 

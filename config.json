@@ -1,6 +1,4 @@
 {
-  "default" : "AsymMarkov",
-
   "GridLaplacian1D" : {
     "gridSize" : 128,
     "stdDev" : 0.5,
